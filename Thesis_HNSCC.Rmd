@@ -26,6 +26,8 @@ library(maxprobes)
 library(GenomicRanges)
 library(ggplot2)
 library(missMethyl)
+library(heatmaply)
+library(RColorBrewer)
 ```
 
 Annotation data for the Illumina Human Methylation 450k BeadChip, which is a microarray platform commonly used for DNA methylation analysis. The annotation data typically includes information about the genomic locations, gene names, and other relevant details associated with the probes on the BeadChip.
@@ -38,7 +40,7 @@ head(ann450k)
 Reading in the Sample sheet which has paramters regarding the samples like Sample Number, sample subtype etc.
 ```{r}
 # read in the sample sheet for the experiment
-targets <- read.metharray.sheet(dataDirectory, pattern="GB160121-KP Sample Sheet 450k.csv")
+targets <- read.metharray.sheet(dataDirectory, pattern="GB160121-KP Sample Sheet 450k_alltissues copy 2.csv")
 ```
 
 Read and load DNA methylation data from an Illumina methylation array experiment called rgSet. The function read.metharray.exp() takes the targets file as input and processes it to extract the necessary information and load the methylation data into rgSet.
@@ -72,12 +74,12 @@ barplot(colMeans(detP), col=pal[factor(targets$Sample_Group)], las=2,
         cex.names=0.8, ylab="Mean detection p-values")
 abline(h=0.005,col="red")
 legend("topleft", legend=levels(factor(targets$Sample_Group)), fill=pal,
-       bg="white")
+       bg="white",cex=0.5)
 
 barplot(colMeans(detP), col=pal[factor(targets$Sample_Group)], las=2, 
         cex.names=0.8, ylim=c(0,0.002), ylab="Mean detection p-values")
 abline(h=0.005,col="red")
-legend("topleft", legend=levels(factor(targets$Sample_Group)), fill=pal)
+legend("topleft", legend=levels(factor(targets$Sample_Group)), cex=0.5,fill=pal)
 ```
 
 Writing a QC report and storing it as a PDDF document 
@@ -94,7 +96,7 @@ rgSet <- rgSet[,keep]
 rgSet
 ```
 
-Updating the smaple sheet to have only those samples that satistfy the treshold (p<0.05)
+Updating the smaple sheet to have only those samples that satisfy the treshold (p<0.05)
 ```{r}
 # remove poor quality samples from targets data
 targets <- targets[keep,]
@@ -134,15 +136,13 @@ legend("top", legend = levels(factor(targets$Sample_Group)),
 PCA to see how the samples cluster based on sample group
 ```{r}
 # MDS plots to look at largest sources of variation
-par(mfrow=c(1,2))
-plotMDS(getM(mSetSq), top=1000, gene.selection="common", cex =0.75,
-        col=pal[factor(targets$Sample_Group)],labels = mSetSq$Sample_Name)
-legend("topright", legend=levels(factor(targets$Sample_Group)), text.col=pal,
+plotMDS(getM(mSetSq), top=1000, gene.selection="common", cex =1,
+        col=pal[factor(targets$Sample_Group)],labels = targets$Sample_Name)
+legend("bottomright", legend=levels(factor(targets$Sample_Group)), text.col=pal,
        bg="white", cex=0.5)
-#This part is not suitable for our analysis since we have only one classification
-plotMDS(getM(mSetSq), top=1000, gene.selection="common", cex=0.5,col=pal[factor(targets$Sample_Name)])
-legend("topright", legend=levels(factor(targets$Sample_Name)), text.col=pal,bg="white", cex=0.5)
+
 ```
+
 ```{r}
 # Examine higher dimensions to look at other sources of variation
 par(mfrow=c(1,3))
@@ -162,6 +162,7 @@ legend("topright", legend=levels(factor(targets$Sample_Group)), text.col=pal,
        cex=0.5, bg="white")
 
 ```
+
 ```{r}
 # ensure probes are in the same order in the mSetSq and detP objects
 detP <- detP[match(featureNames(mSetSq),rownames(detP)),] 
@@ -203,27 +204,43 @@ mSetSqFlt
 ```{r}
 #Revisiting MDS post normalisation and filtering
 
-par(mfrow=c(1,2))
 plotMDS(getM(mSetSqFlt), top=1000, gene.selection="common", 
-        col=pal[factor(targets$Sample_Group)], cex=0.5)
-legend("right", legend=levels(factor(targets$Sample_Group)), text.col=pal,
-       cex=0.65, bg="white")
-
-plotMDS(getM(mSetSqFlt), top=1000, gene.selection="common", cex=0.5,
-        col=pal[factor(targets$Sample_Name)])
-legend("right", legend=levels(factor(targets$Sample_Name)), text.col=pal,
-       cex=0.7, bg="white")
+        col=pal[factor(targets$Sample_Group)], cex=0.75)
+legend("topright", legend=levels(factor(targets$Sample_Group)), text.col=pal,
+       cex=0.65, bg="white",)
 ```
+
 ```{r}
 # calculate M-values for statistical analysis
 mVals <- getM(mSetSqFlt)
 head(mVals[,1:5])
 ```
+
 ```{r}
 bVals <- getBeta(mSetSqFlt)
 head(bVals[,1:5])
 
 ```
+
+
+Correlation matrix for beta values
+```{r}
+corr_mtx<-cor(bVals ,method = "pearson")
+corr_mtx
+library(viridis)
+heatmap_res<-heatmaply(corr_mtx, 
+          colors = viridis(100),
+          main = "Correlation Heatmap")
+heatmap_res
+```
+
+
+```{r}
+PCA_Bval<-prcomp(bVals[])
+plot(PCA_Bval$x[,1],PCA_Bval$x[,2])
+```
+
+
 ```{r}
 par(mfrow=c(1,2))
 densityPlot(bVals, sampGroups=targets$Sample_Group, main="Beta values", 
@@ -261,6 +278,7 @@ fit2 <- eBayes(fit2)
 # look at the numbers of DM CpGs at FDR < 0.05
 summary(decideTests(fit2))
 ```
+
 ```{r}
 # get the table of results for the first contrast (naive - rTreg)
 ann450kSub <- ann450k[match(rownames(mVals),ann450k$Name),
@@ -272,6 +290,8 @@ DMP_ord<-DMPs[order(DMPs$t),]
 DMP_ord<-subset.data.frame(DMP_ord,DMP_ord$P.Value<0.05)
 tail(DMP_ord)
 head(DMP_ord)
+DMP_probes<-DMP_ord$Name
+mvals_dmp<-mVals[rownames(mVals) %in% DMP_probes, ]
 ```
 
 ```{r}
@@ -290,10 +310,10 @@ dim(DMP_ord)
 ```{r}
 #Plot the bottom 4 differentially methylated CpGs
 par(mfrow=c(2,2))
-sapply(tail(rownames(DMP_ord,4)), function(cpg){
+sapply(tail(rownames(DMP_ord)), function(cpg){
   plotCpg(bVals, cpg=cpg, pheno=targets$Sample_Group, ylab = "Beta values")
 })
-tail(DMP_ord,4)
+
 ```
 
 ```{r}
@@ -307,12 +327,13 @@ myAnnotation <- cpg.annotate(object = mVals, datatype = "array", what = "M",
 ```{r}
 str(myAnnotation)
 ```
+
 ```{r}
 #identify differentially methylated regions
 DMRs <- dmrcate(myAnnotation, lambda=1000, C=2)
 results.ranges <- extractRanges(DMRs)
 head(results.ranges,6)
-
+results.ranges
 ```
 
 ```{r}
@@ -326,10 +347,11 @@ cols
 ```{r}
 # draw the plot for the top DMR
 par(mfrow=c(1,1))
-DMR.plot(ranges = results.ranges, dmr = 4, CpGs = bVals, phen.col = cols, 
+DMR.plot(ranges = results.ranges, dmr = 2, CpGs = bVals, phen.col = cols, 
          what = "Beta", arraytype = "450K", genome = "hg19")
+
 ```
-Visualizing the distribution of DMR across chromosomes and the distribution o fength of the ranges
+Visualizing the distribution of DMR across chromosomes and the distribution of length of the ranges
 ```{r}
 range_DMR<-ranges(results.ranges)
 range_DMR<-data.frame(range_DMR)
@@ -340,6 +362,14 @@ dmr_chr_countdf<-data.frame(chromosome=names(chr_names),count=as.numeric(chr_nam
 ggplot(dmr_chr_countdf, aes(x=chromosome,y=count)) + geom_bar(stat="identity",fill="red",width=0.5 )+labs(x = "Chromosome", y = "DMR Count", title = "DMR Counts per Chromosome")+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
 
+```{r}
+DMP_Data<-data.frame(Probe.ID<-DMP_ord$Name, Chromosome=DMP_ord$chr, Position=DMP_ord$pos, p_value=DMP_ord$P.Value)
+DMR_Data<-data.frame(DMR_ID=range_DMR)
+```
+
+
+
+
 GSEA- Gene Set Enrichment Analysis.
 This is performed to identify the gene sets enriched in Margin as compared to Normal tissues in the given samples
 ```{r}
@@ -348,8 +378,15 @@ gst.region <- goregion(results.ranges, all.cpg=rownames(mVals),
 ```
 We extract the top 10 gene sets that are statistically significant Gene sets in Margin as compared to normal
 ```{r}
-topGSA(gst.region, n=10)
-
+Margin_Normal_topGSA<-topGSA(gst.region, n=10)
+Margin_Normal_topGSA
+ggplot(as.data.frame(Margin_Normal_topGSA), aes(x = reorder(TERM, P.DE), y =P.DE)) +
+  geom_point(aes(color = P.DE), size = 10) +
+  labs(title = "Significantly Enriched Gene Sets in Margin- Normal",
+       x = "Gene Set",
+       y = "p-value") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15))
 ```
 
 
@@ -360,293 +397,46 @@ gst.region.kegg <- goregion(results.ranges, all.cpg=rownames(mVals),
 top_20_pathways<-topGSA(gst.region.kegg, n=10)
 top_20_pathways
 
-
+ggplot(as.data.frame(top_20_pathways), aes(x = reorder(Description, P.DE), y =P.DE)) +
+  geom_point(aes(color = P.DE), size = 10) +
+  labs(title = "Significantly Enriched Pathways in Margin- Normal",
+       x = "Gene Set",
+       y = "p-value") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15))
 ```
 
-------------------------------------------------------PlasmaDNA-Margin-----------------------------------------------------------------------------
-
-Subset the matrix to have only those samples for which we have all types of tissue samples
-
+-------------------------------------------------------------PlasmaDNA-Normal----------------------------------------------------------------------
 ```{r}
-# read in the sample sheet for the experiment
-alltissue_sample_targets <- read.metharray.sheet(dataDirectory, pattern="GB160121-KP Sample Sheet 450k_alltissues.csv")
-
-rgset_alltissue_sample<- read.metharray.exp(targets=alltissue_sample_targets)
-```
-Giving descriptive names to the samples
-```{r}
-# give the samples descriptive names
-alltissue_sample_targets$ID <- paste(alltissue_sample_targets$Sample_Name,alltissue_sample_targets$Sample_Group,sep=".")
-sampleNames(rgset_alltissue_sample) <- alltissue_sample_targets$ID
-alltissue_sample_targets
-```
-
-Calculating detection p values: It is idicative of quality of signal. If the p values are small, then it is indicative of reliable signal. If the p values are larger than 0.01 then it indicates poor quality of signal
-```{r}
-# calculate the detection p-values
-detP_alltissue <- detectionP(rgset_alltissue_sample)
-head(detP_alltissue)
-```
-
-Filtering out poor quality samples and keeping samples that have detection p <0.05
-```{r}
-# remove poor quality samples
-keep_alltissue <- colMeans(detP_alltissue) < 0.05
-rgset_alltissue_sample <- rgset_alltissue_sample[,keep_alltissue]
-rgset_alltissue_sample
-```
-
-Updating the smaple sheet to have only those samples that satistfy the treshold (p<0.05)
-```{r}
-# remove poor quality samples from targets data
-alltissue_sample_targets <- alltissue_sample_targets[keep_alltissue,]
-alltissue_sample_targets[,1:5]
-```
-Filter out detection p values table for only those that are present in the sample sheet (i.e only those that have satisfied the treshold of p<0.05)
-```{r}
-# remove poor quality samples from detection p-value table
-detP_alltissue <- detP_alltissue[,keep_alltissue]
-dim(detP_alltissue)
-```
-We now have 485512 probes and 24 samples 
-
-Normlaise the data using Fucntional Normalisation
-```{r}
-# normalize the data; this results in a GenomicRatioSet object
-mSetSq_alltissue <- preprocessFunnorm(rgset_alltissue_sample) 
-
-```
-
-```{r}
-# create a MethylSet object from the raw data for plotting
-mSetRaw_alltissue <- preprocessRaw(rgset_alltissue_sample)
-```
-
-
-PCA to see how the samples cluster based on sample group
-```{r}
-# MDS plots to look at largest sources of variation
-
-plotMDS(getM(mSetSq_alltissue), top=1000, gene.selection="common", cex =0.75,
-        col=pal[factor(alltissue_sample_targets$Sample_Group)],labels = mSetSq_alltissue$Sample_Name)
-legend("topright", legend=levels(factor(alltissue_sample_targets$Sample_Group)), text.col=pal,
-       bg="white", cex=0.5)
-```
-
-```{r}
-# ensure probes are in the same order in the mSetSq and detP objects
-detP_alltissue <- detP_alltissue[match(featureNames(mSetSq_alltissue),rownames(detP_alltissue)),] 
-
-# remove any probes that have failed in one or more samples
-keep_alltissue <- rowSums(detP_alltissue < 0.01) == ncol(mSetSq_alltissue) 
-table(keep_alltissue)
-```
-
-```{r}
-mSetSqFlt_alltissue <- mSetSq_alltissue[keep_alltissue,]
-mSetSqFlt_alltissue
-```
-
-```{r}
-# if your data includes males and females, remove probes on the sex chromosomes
-keep_alltissue <- !(featureNames(mSetSqFlt_alltissue) %in% ann450k$Name[ann450k$chr %in% 
-                                                        c("chrX","chrY")])
-table(keep_alltissue)
-mSetSqFlt_alltissue <- mSetSqFlt_alltissue[keep_alltissue,]
-
-# remove probes with SNPs at CpG site
-mSetSqFlt_alltissue <- dropLociWithSnps(mSetSqFlt_alltissue)
-mSetSqFlt_alltissue
-
-```
-
-Remove cross reactive probes: These are probes that bind to multiple regions in the genome and so not have unique binding sites. These are to be removed since their signal creates bias. The file containing the cross reactive probes was taken from : https://github.com/IARCbioinfo/Methylation_analysis_scripts/blob/master/48639-non-specific-probes-Illumina450k.csv
-```{r}
-# exclude cross reactive probes 
-xReactiveProbes <- read.csv(file=paste(dataDirectory,"48639-non-specific-probes-Illumina450k.csv",sep="/"), stringsAsFactors=FALSE)
-keep_alltissue <- !(featureNames(mSetSqFlt_alltissue) %in% xReactiveProbes$TargetID)
-table(keep_alltissue)
-mSetSqFlt_alltissue <- mSetSqFlt_alltissue[keep_alltissue,] 
-mSetSqFlt_alltissue
-```
-
-```{r}
-# calculate M-values for statistical analysis
-mVals_alltissue <- getM(mSetSqFlt_alltissue)
-head(mVals_alltissue[,1:5])
-```
-
-```{r}
-bVals_alltissue <- getBeta(mSetSqFlt_alltissue)
-head(bVals_alltissue[,1:5])
-
-```
-
-```{r}
-# this is the factor of interest
-cellType_alltissue <- factor(alltissue_sample_targets$Sample_Group)
-# use the above to create a design matrix
-design_alltissue <- model.matrix(~0+cellType_alltissue, data=alltissue_sample_targets)
-colnames(design_alltissue) <- levels(cellType_alltissue)
-# fit the linear model 
-fit_alltissue <- lmFit(mVals_alltissue, design_alltissue)
-contMatrix_ct_margin <- makeContrasts(Plasma_DNA-Margin,
-                           levels=design_alltissue)
-contMatrix_ct_margin
+contMatrix_ct_normal<- makeContrasts(Plasma_DNA-Normal,
+                           levels=design)
+contMatrix_ct_normal
 ```
 
 ```{r}
 # fit the contrasts
-fit2_ct_margin <- contrasts.fit(fit_alltissue, contMatrix_ct_margin)
-fit2_ct_margin <- eBayes(fit2_ct_margin)
+fit2_ct_normal <- contrasts.fit(fit, contMatrix_ct_normal)
+fit2_ct_normal <- eBayes(fit2_ct_normal)
 ```
 
 
 ```{r}
 # look at the numbers of DM CpGs at FDR < 0.05
-summary(decideTests(fit2_ct_margin))
-```
-
-```{r}
-# get the table of results for the first contrast (naive - rTreg)
-ann450kSub_ct_margin <- ann450k[match(rownames(mVals_alltissue),ann450k$Name),
-                      c(1:4,12:19,24:ncol(ann450k))]
-DMPs_ct_margin <- topTable(fit2_ct_margin, num=Inf, coef=1, genelist=ann450kSub_ct_margin)
-
-
-DMP_ord_ct_margin<-DMPs_ct_margin[order(DMPs_ct_margin$t),]
-DMP_ord_ct_margin<-subset.data.frame(DMP_ord_ct_margin,DMP_ord_ct_margin$P.Value<0.05)
-tail(DMPs_ct_margin)
-head(DMPs_ct_margin)
-```
-
-```{r}
-write.table(DMP_ord_ct_margin, file="DMPs_ct_margin.csv", sep=",", row.names=FALSE)
-```
-
-```{r}
-# plot the top 4 most significantly differentially methylated CpGs 
-par(mfrow=c(2,2))
-sapply(rownames(DMP_ord_ct_margin)[1:4], function(cpg){
-  plotCpg(bVals_alltissue, cpg=cpg, pheno=alltissue_sample_targets$Sample_Group, ylab = "Beta values")
-})
-dim(DMP_ord_ct_margin)
-
-```
-
-```{r}
-#Plot the bottom 4 differentially methylated CpGs
-par(mfrow=c(2,2))
-sapply(tail(rownames(DMP_ord_ct_margin,4)), function(cpg){
-  plotCpg(bVals_alltissue, cpg=cpg, pheno=alltissue_sample_targets$Sample_Group, ylab = "Beta values")
-})
-tail(DMP_ord_ct_margin,4)
-```
-
-```{r}
-myAnnotation_ct_margin <- cpg.annotate(object = mVals_alltissue, datatype = "array", what = "M", 
-                             analysis.type = "differential", design = design_alltissue, 
-                             contrasts = TRUE, cont.matrix = contMatrix_ct_margin, 
-                             coef = colnames(contMatrix_ct_margin), arraytype = "450K")
-```
-
-```{r}
-str(myAnnotation_ct_margin)
-```
-
-```{r}
-#identify differentially methylated regions
-DMRs_ct_margin <- dmrcate(myAnnotation_ct_margin, lambda=1000, C=2)
-results.ranges_ct_margin <- extractRanges(DMRs_ct_margin)
-head(results.ranges_ct_margin,6)
-
-```
-
-```{r}
-# set up the grouping variables and colours
-groups_alltissue <- pal[1:length(unique(alltissue_sample_targets$Sample_Group))]
-names(groups_alltissue) <- levels(factor(alltissue_sample_targets$Sample_Group))
-cols_alltissue <- groups_alltissue[as.character(factor(alltissue_sample_targets$Sample_Group))]
-cols_alltissue
-```
-
-```{r}
-# draw the plot for the top DMR
-par(mfrow=c(1,1))
-DMR.plot(ranges = results.ranges_ct_margin, dmr = 2, CpGs = bVals_alltissue, phen.col = cols_alltissue, 
-         what = "Beta", arraytype = "450K", genome = "hg19")
-```
-
-```{r}
-range_DMR_ct_margin<-ranges(results.ranges_ct_margin)
-range_DMR_ct_margin<-data.frame(range_DMR_ct_margin)
-ggplot(range_DMR_ct_margin, aes(x=width)) + geom_histogram(color="darkblue", fill="lightblue",binwidth =100)
-
-chr_names_ct_margin<-table(seqnames(results.ranges_ct_margin))
-dmr_chr_countdf_ct_margin<-data.frame(chromosome=names(chr_names_ct_margin),count=as.numeric(chr_names_ct_margin))
-ggplot(dmr_chr_countdf_ct_margin, aes(x=chromosome,y=count)) + geom_bar(stat="identity",fill="red",width=0.5 )+labs(x = "Chromosome", y = "DMR Count", title = "DMR Counts per Chromosome")+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
-```
-
-GSEA
-```{r}
-gst.region_ct_margin <- goregion(results.ranges_ct_margin, all.cpg=rownames(mVals_alltissue), 
-                       collection="GO", array.type="450K", plot.bias=TRUE,sig.genes = TRUE)
-
-```
-
-```{r}
-topGSA(gst.region_ct_margin, n=10)
-```
-
-
-
-```{r}
-gst.region.kegg_ct_margin <- goregion(results.ranges_ct_margin, all.cpg=rownames(mVals), 
-                       collection="KEGG", array.type="450K",sig.genes = TRUE)
-
-top_20_pathways_ct_margin<-topGSA(gst.region.kegg_ct_margin, n=10)
-top_20_pathways_ct_margin
-
-
-```
-
--------------------------------------------------------------Core-Margin----------------------------------------------------------------------
-```{r}
-# this is the factor of interest
-#cellType_alltissue <- factor(alltissue_sample_targets$Sample_Group)
-# use the above to create a design matrix
-#design_alltissue <- model.matrix(~0+cellType_alltissue, #data=alltissue_sample_targets)
-#colnames(design_alltissue) <- levels(cellType_alltissue)
-# fit the linear model 
-#fit_alltissue <- lmFit(mVals_alltissue, design_alltissue)
-contMatrix_core_margin<- makeContrasts(Core-Margin,
-                           levels=design_alltissue)
-contMatrix_core_margin
-```
-
-```{r}
-# fit the contrasts
-fit2_core_margin <- contrasts.fit(fit_alltissue, contMatrix_core_margin)
-fit2_core_margin <- eBayes(fit2_core_margin)
-```
-
-
-```{r}
-# look at the numbers of DM CpGs at FDR < 0.05
-summary(decideTests(fit2_core_margin))
+summary(decideTests(fit2_ct_normal))
 ```
 
 ```{r}
 # get the table of results for the first contrast (naive - rTreg)
 ann450kSub_ct_normal <- ann450k[match(rownames(mVals),ann450k$Name),
                       c(1:4,12:19,24:ncol(ann450k))]
-DMPs_ct_normal <- topTable(fit2, num=Inf, coef=1, genelist=ann450kSub_ct_normal)
+DMPs_ct_normal <- topTable(fit2_ct_normal, num=Inf, coef=1, genelist=ann450kSub_ct_normal)
 
 
 DMP_ord_ct_normal<-DMPs_ct_normal[order(DMPs_ct_normal$t),]
 DMP_ord_ct_normal<-subset.data.frame(DMP_ord_ct_normal,DMP_ord_ct_normal$P.Value<0.05)
 tail(DMPs_ct_normal)
 head(DMPs_ct_normal)
+dim(DMP_ord_ct_normal)
 ```
 
 ```{r}
@@ -676,7 +466,8 @@ tail(DMP_ord_ct_normal,4)
 myAnnotation_ct_normal <- cpg.annotate(object = mVals, datatype = "array", what = "M", 
                              analysis.type = "differential", design = design, 
                              contrasts = TRUE, cont.matrix = contMatrix_ct_normal, 
-                             coef = colnames(contMatrix_ct_normal), arraytype = "450K")
+                             coef = colnames(contMatrix_ct_normal), arraytype = "450K" )
+
 ```
 
 ```{r}
@@ -684,11 +475,11 @@ str(myAnnotation_ct_normal)
 ```
 
 ```{r}
-#identify differentially methylated regions
+#identify differential methylated regions
 DMRs_ct_normal <- dmrcate(myAnnotation_ct_normal, lambda=1000, C=2)
 results.ranges_ct_normal <- extractRanges(DMRs_ct_normal)
 head(results.ranges_ct_normal,6)
-
+results.ranges_ct_normal
 ```
 
 ```{r}
@@ -718,7 +509,6 @@ chr_names_ct_normal<-table(seqnames(results.ranges_ct_normal))
 dmr_chr_countdf_ct_normal<-data.frame(chromosome=names(chr_names_ct_normal),count=as.numeric(chr_names_ct_normal))
 ggplot(dmr_chr_countdf_ct_normal, aes(x=chromosome,y=count)) + geom_bar(stat="identity",fill="red",width=0.5 )+labs(x = "Chromosome", y = "DMR Count", title = "DMR Counts per Chromosome")+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
-
 GSEA
 ```{r}
 
@@ -732,90 +522,87 @@ gst.region_ct_normal <- goregion(results.ranges_ct_normal, all.cpg=rownames(mVal
 topGSA(gst.region_ct_normal, n=10)
 ```
 
-
-
 ```{r}
 gst.region.kegg_ct_normal <- goregion(results.ranges_ct_normal, all.cpg=rownames(mVals), 
                        collection="KEGG", array.type="450K",sig.genes = TRUE)
 
 top_20_pathways_ct_normal<-topGSA(gst.region.kegg_ct_normal, n=10)
 top_20_pathways_ct_normal
-
-
 ```
 
--------------------------------------------------------------Normal-Cancer-----------------------------------------------------------------------
+----------------------------------------------------------------------------------Core-Normal------------------------------------------------------------------------
 ```{r}
-contMatrix_normal_core<- makeContrasts(Normal-Core,
+contMatrix_core_normal<- makeContrasts(Core-Normal,
                            levels=design)
-contMatrix_normal_core
+contMatrix_core_normal
 ```
 
 ```{r}
 # fit the contrasts
-fit2_normal_core <- contrasts.fit(fit, contMatrix_normal_core)
-fit2_normal_core <- eBayes(fit2_normal_core)
+fit2_core_normal <- contrasts.fit(fit, contMatrix_core_normal)
+fit2_core_normal <- eBayes(fit2_core_normal)
 ```
 
 
 ```{r}
 # look at the numbers of DM CpGs at FDR < 0.05
-summary(decideTests(fit2_normal_core))
+summary(decideTests(fit2_core_normal))
 ```
 
 ```{r}
 # get the table of results for the first contrast (naive - rTreg)
-ann450kSub_normal_core <- ann450k[match(rownames(mVals),ann450k$Name),
+ann450kSub_core_normal <- ann450k[match(rownames(mVals),ann450k$Name),
                       c(1:4,12:19,24:ncol(ann450k))]
-DMPs_normal_core <- topTable(fit2, num=Inf, coef=1, genelist=ann450kSub_normal_core)
+DMPs_core_normal <- topTable(fit2_core_normal, num=Inf, coef=1, genelist=ann450kSub_core_normal)
 
 
-DMP_ord_normal_core<-DMPs_normal_core[order(DMPs_normal_core$t),]
-DMP_ord_normal_core<-subset.data.frame(DMP_ord_normal_core,DMP_ord_normal_core$P.Value<0.05)
-tail(DMPs_normal_core)
-head(DMPs_normal_core)
+DMP_ord_core_normal<-DMPs_core_normal[order(DMPs_core_normal$t),]
+DMP_ord_core_normal<-subset.data.frame(DMP_ord_core_normal,DMP_ord_core_normal$P.Value<0.05)
+tail(DMPs_core_normal)
+head(DMPs_core_normal)
 ```
 
 ```{r}
-write.table(DMP_ord_normal_core, file="DMPs_normal_core.csv", sep=",", row.names=FALSE)
+write.table(DMP_ord_core_normal, file="DMPs_core_normal.csv", sep=",", row.names=FALSE)
 ```
 
 ```{r}
 # plot the top 4 most significantly differentially methylated CpGs 
 par(mfrow=c(2,2))
-sapply(rownames(DMP_ord_normal_corel)[1:4], function(cpg){
+sapply(rownames(DMP_ord_core_normal)[1:4], function(cpg){
   plotCpg(bVals, cpg=cpg, pheno=targets$Sample_Group, ylab = "Beta values")
 })
-dim(DMP_ord_normal_core)
+dim(DMP_ord_core_normal)
 
 ```
 
 ```{r}
 #Plot the bottom 4 differentially methylated CpGs
 par(mfrow=c(2,2))
-sapply(tail(rownames(DMP_ord_normal_core,4)), function(cpg){
+sapply(tail(rownames(DMP_ord_core_normal,4)), function(cpg){
   plotCpg(bVals, cpg=cpg, pheno=targets$Sample_Group, ylab = "Beta values")
 })
-tail(DMP_ord_normal_core,4)
+tail(DMP_ord_core_normal,4)
 ```
 
 ```{r}
-myAnnotation_normal_core <- cpg.annotate(object = mVals, datatype = "array", what = "M", 
+myAnnotation_core_normal <- cpg.annotate(object = mVals, datatype = "array", what = "M", 
                              analysis.type = "differential", design = design, 
-                             contrasts = TRUE, cont.matrix = contMatrix_normal_core, 
-                             coef = colnames(contMatrix_normal_core), arraytype = "450K")
+                             contrasts = TRUE, cont.matrix = contMatrix_core_normal, 
+                             coef = colnames(contMatrix_core_normal), arraytype = "450K" )
+
 ```
 
 ```{r}
-str(myAnnotation_normal_core)
+str(myAnnotation_core_normal)
 ```
 
 ```{r}
-#identify differentially methylated regions
-DMRs_normal_core <- dmrcate(myAnnotation_normal_core, lambda=1000, C=2)
-results.ranges_normal_core <- extractRanges(DMRs_normal_core)
-head(results.ranges_normal_core,6)
-
+#identify differential methylated regions
+DMRs_core_normal <- dmrcate(myAnnotation_core_normal, lambda=1000, C=2)
+results.ranges_core_normal <- extractRanges(DMRs_core_normal)
+head(results.ranges_core_normal,6)
+results.ranges_core_normal
 ```
 
 ```{r}
@@ -829,7 +616,7 @@ cols
 ```{r}
 # draw the plot for the top DMR
 par(mfrow=c(1,1))
-DMR.plot(ranges = results.ranges_normal_core, dmr = 2, CpGs = bVals, phen.col = cols, 
+DMR.plot(ranges = results.ranges_core_normal, dmr = 4, CpGs = bVals, phen.col = cols, 
          what = "Beta", arraytype = "450K", genome = "hg19")
 ```
 
@@ -837,56 +624,621 @@ DMR.plot(ranges = results.ranges_normal_core, dmr = 2, CpGs = bVals, phen.col = 
 
 library(GenomicRanges)
 library(ggplot2)
-range_DMR_normal_core<-ranges(results.ranges_normal_core)
-range_DMR_normal_core<-data.frame(range_DMR_normal_core)
-ggplot(range_DMR_normal_core, aes(x=width)) + geom_histogram(color="darkblue", fill="lightblue",binwidth =100)
+range_DMR_core_normal<-ranges(results.ranges_core_normal)
+range_DMR_core_normal<-data.frame(range_DMR_core_normal)
+ggplot(range_DMR_core_normal, aes(x=width)) + geom_histogram(color="darkblue", fill="lightblue",binwidth =100)
 
-chr_names_normal_core<-table(seqnames(results.ranges_normal_core))
-dmr_chr_countdf_normal_core<-data.frame(chromosome=names(chr_names_normal_core),count=as.numeric(chr_names_normal_core))
-ggplot(dmr_chr_countdf_normal_core, aes(x=chromosome,y=count)) + geom_bar(stat="identity",fill="red",width=0.5 )+labs(x = "Chromosome", y = "DMR Count", title = "DMR Counts per Chromosome")+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
+chr_names_core_normal<-table(seqnames(results.ranges_core_normal))
+dmr_chr_countdf_core_normal<-data.frame(chromosome=names(chr_names_core_normal),count=as.numeric(chr_names_core_normal))
+ggplot(dmr_chr_countdf_core_normal, aes(x=chromosome,y=count)) + geom_bar(stat="identity",fill="red",width=0.5 )+labs(x = "Chromosome", y = "DMR Count", title = "DMR Counts per Chromosome")+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
 
 GSEA
 ```{r}
 
 library(missMethyl)
-gst.region_normal_core <- goregion(results.ranges_normal_core, all.cpg=rownames(mVals), 
+gst.region_core_normal <- goregion(results.ranges_core_normal, all.cpg=rownames(mVals), 
                        collection="GO", array.type="450K", plot.bias=TRUE,sig.genes = TRUE)
 
 ```
 
 ```{r}
-topGSA(gst.region_normal_core, n=10)
+topGSA(gst.region_core_normal, n=10)
+reuslt_core_norm_df<-as.data.frame(topGSA(gst.region_core_normal, n=10))
+ggplot(reuslt_core_norm_df, aes(x = reorder(TERM, P.DE), y = P.DE)) +
+  geom_dotplot(stat = "identity", fill = "dodgerblue") +
+  labs(title = "Significant Gene Sets",
+       x = "Gene Set",
+       y = "p-value") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggplot(reuslt_core_norm_df, aes(x = reorder(TERM, P.DE), y = P.DE)) +
+  geom_point(aes(color = P.DE), size = 5) +
+  labs(title = "Significant Gene Sets",
+       x = "Gene Set",
+       y = "p-value") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10))
 ```
 
 
 
 ```{r}
-gst.region.kegg_normal_core <- goregion(results.ranges_normal_core, all.cpg=rownames(mVals), 
+gst.region.kegg_core_normal <- goregion(results.ranges_core_normal, all.cpg=rownames(mVals), 
                        collection="KEGG", array.type="450K",sig.genes = TRUE)
 
-top_20_pathways_normal_core<-topGSA(gst.region.kegg_normal_core, n=10)
-top_20_pathways_normal_core
+top_20_pathways_core_normal<-topGSA(gst.region.kegg_core_normal, n=10)
+top_20_pathways_core_normal
+
+ggplot(as.data.frame(top_20_pathways_core_normal), aes(x = reorder(Description, P.DE), y =P.DE)) +
+  geom_point(aes(color = P.DE), size = 5) +
+  labs(title = "Significantly Enriched Pathways in Core- Normal",
+       x = "Gene Set",
+       y = "p-value") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10))
+```
 
 
+--------------------------------------------------------------Venn diagram to see overlap in DMR---------------------------------------------------------------------
+```{r}
+
+library(VennDiagram)
+
+Mar_Core_DMR<-intersect(as.character(results.ranges),as.character(results.ranges_core_normal))
+
+Core_Ct_DMR<-intersect(as.character(results.ranges_ct_normal),as.character(results.ranges_core_normal))
+
+Mar_Ct_DMR<-intersect(as.character(results.ranges),as.character(results.ranges_ct_normal))
+
+Mar_Core_Ct_DMR<-intersect(as.character(results.ranges_core_normal),Mar_Ct_DMR)
+
+length(Mar_Core_DMR)
+length(Core_Ct_DMR)
+length(Mar_Ct_DMR)
+
+venn_DMR <- venn.diagram(list(as.character(
+  results.ranges),as.character(results.ranges_core_normal),as.character(results.ranges_ct_normal)),
+  category = c("Margin", "Core", "Plasma"),
+  fill = c("skyblue", "mediumorchid", "lightgreen"),
+  alpha = 0.5,  # Transparency of set regions
+  filename = NULL  # Set this to a file name if you want to save the plot as an image
+)
+subsetByOverlaps(results.ranges_core_normal,results.ranges_ct_normal)
+grid.newpage()
+grid.draw(venn_DMR)
+
+#Convert overlapping region back into GRange object
+convert_to_granges <- function(Mar_Core_Ct_DMR) {
+  # Split the character ranges into sequence names, start positions, and end positions
+  split_ranges <- strsplit(Mar_Core_Ct_DMR, "[:-]")
+  seqnames <- sapply(split_ranges, "[[", 1)
+  start <- as.numeric(sapply(split_ranges, "[[", 2))
+  end <- as.numeric(sapply(split_ranges, "[[", 3))
+
+  # Create the GRanges object
+  granges_object <- GRanges(seqnames = seqnames, ranges = IRanges(start = start, end = end))
+
+  return(granges_object)
+}
+
+# Convert character ranges to GRanges--All 3 overlaps
+granges_object_3_overlap <- convert_to_granges(Mar_Core_Ct_DMR)
+
+granges_object_3_overlap
+
+overlap_DMR_3<-paste(results.ranges_core_normal[4,],results.ranges_core_normal[8,])
+overlap_DMR_3
+
+#GSEA KEGG all 3 overlap 
+gst.region.kegg_3_overlap <- goregion(granges_object_3_overlap, all.cpg=rownames(mVals), 
+                       collection="KEGG", array.type="450K",sig.genes = TRUE)
+
+top_5_pathways_3_overlap_KEGG<-topGSA(gst.region.kegg_3_overlap, n=5)
+top_5_pathways_3_overlap_KEGG
+
+gst.region.GO_3_overlap <- goregion(granges_object_3_overlap, all.cpg=rownames(mVals), 
+                       collection="GO", array.type="450K",sig.genes = TRUE)
+top_5_pathways_3_overlap_GO<-topGSA(gst.region.GO_3_overlap, n=5)
+top_5_pathways_3_overlap_GO
+```
+
+Core-Margin-Overlap
+```{r}
+granges_object_C_M_overlap <- convert_to_granges(Mar_Core_DMR)
+
+
+
+#GSEA KEGG all 3 overlap 
+gst.region.kegg_C_M_overlap <- goregion(granges_object_C_M_overlap, all.cpg=rownames(mVals), 
+                       collection="KEGG", array.type="450K",sig.genes = TRUE)
+
+top_5_pathways_C_M_overlap_KEGG<-topGSA(gst.region.kegg_C_M_overlap, n=5)
+top_5_pathways_C_M_overlap_KEGG
+
+gst.region.GO_C_M_overlap <- goregion(granges_object_C_M_overlap, all.cpg=rownames(mVals), 
+                       collection="GO", array.type="450K",sig.genes = TRUE)
+top_5_pathways_C_M_overlap_GO<-topGSA(gst.region.GO_C_M_overlap, n=5)
+top_5_pathways_C_M_overlap_GO
+```
+
+Plasma-Margin Overlap
+```{r}
+granges_object_Ct_M_overlap <- convert_to_granges(Mar_Ct_DMR)
+granges_object_Ct_M_overlap
+
+
+##GSEA KEGG all 3 overlap 
+#gst.region.kegg_Ct_M_overlap <- goregion(granges_object_Ct_M_overlap, all.cpg=rownames(mVals), 
+                      # collection="KEGG", array.type="450K",sig.genes = TRUE)
+
+#top_5_pathways_Ct_M_overlap_KEGG<-topGSA(gst.region.kegg_Ct_M_overlap, n=5)
+#top_5_pathways_Ct_M_overlap_KEGG
+
+#gst.region.GO_Ct_M_overlap <- goregion(granges_object_Ct_M_overlap, all.cpg=rownames(mVals), 
+             #          collection="GO", array.type="450K",sig.genes = TRUE)
+#top_5_pathways_Ct_M_overlap_GO<-topGSA(gst.region.GO_Ct_M_overlap, n=5)
+#top_5_pathways_Ct_M_overlap_GO
+```
+
+Plasma-Core Overlap
+```{r}
+granges_object_Ct_C_overlap <- convert_to_granges(Core_Ct_DMR)
+
+
+
+#GSEA KEGG all 3 overlap 
+#gst.region.kegg_Ct_C_overlap <- goregion(granges_object_Ct_C_overlap, all.cpg=rownames(mVals), 
+ #                      collection="KEGG", array.type="450K",sig.genes = TRUE)
+
+#top_5_pathways_Ct_C_overlap_KEGG<-topGSA(gst.region.kegg_Ct_C_overlap, n=5)
+#top_5_pathways_Ct_C_overlap_KEGG
+
+#gst.region.GO_Ct_C_overlap <- goregion(granges_object_Ct_C_overlap, all.cpg=rownames(mVals), 
+ #                      collection="GO", array.type="450K",sig.genes = TRUE)
+#top_5_pathways_Ct_C_overlap_GO<-topGSA(gst.region.GO_Ct_C_overlap, n=5)
+#top_5_pathways_Ct_C_overlap_GO
+```
+-----------------------------------------------------------------------PlasmaDNA-Margin------------------------------------------------------------------------------
+
+```{r}
+contMatrix_ct_margin <- makeContrasts(Plasma_DNA-Margin,
+                           levels=design)
+contMatrix_ct_margin
+```
+
+```{r}
+# fit the contrasts
+fit2_ct_margin <- contrasts.fit(fit, contMatrix_ct_margin)
+fit2_ct_margin <- eBayes(fit2_ct_margin)
+```
+
+
+```{r}
+# look at the numbers of DM CpGs at FDR < 0.05
+summary(decideTests(fit2_ct_margin))
+```
+
+```{r}
+# get the table of results for the first contrast (naive - rTreg)
+ann450kSub_ct_margin <- ann450k[match(rownames(mVals),ann450k$Name),
+                      c(1:4,12:19,24:ncol(ann450k))]
+DMPs_ct_margin <- topTable(fit2_ct_margin, num=Inf, coef=1, genelist=ann450kSub_ct_margin)
+
+
+DMP_ord_ct_margin<-DMPs_ct_margin[order(DMPs_ct_margin$t),]
+DMP_ord_ct_margin<-subset.data.frame(DMP_ord_ct_margin,DMP_ord_ct_margin$P.Value<0.05)
+tail(DMPs_ct_margin)
+head(DMPs_ct_margin)
+```
+
+```{r}
+write.table(DMP_ord_ct_margin, file="DMPs_ct_margin.csv", sep=",", row.names=FALSE)
+```
+
+```{r}
+# plot the top 4 most significantly differentially methylated CpGs 
+par(mfrow=c(2,2))
+sapply(rownames(DMP_ord_ct_margin)[1:4], function(cpg){
+  plotCpg(bVals, cpg=cpg, pheno=targets$Sample_Group, ylab = "Beta values")
+})
+dim(DMP_ord_ct_margin)
 
 ```
 
 ```{r}
-corr_mtx<-cor(bVals,method = "pearson")
-corr_mtx
+#Plot the bottom 4 differentially methylated CpGs
+par(mfrow=c(2,2))
+sapply(tail(rownames(DMP_ord_ct_margin,4)), function(cpg){
+  plotCpg(bVals, cpg=cpg, pheno=targets$Sample_Group, ylab = "Beta values")
+})
+tail(DMP_ord_ct_margin,4)
+```
 
-library(heatmaply)
-library(RColorBrewer)
-heatmap_res<-heatmaply(corr_mtx, 
-          colors = colorRampPalette(brewer.pal(11, "RdBu"))(100),
-          main = "Correlation Heatmap")
-heatmap_res
-heatmaply(corr_mtx, 
-          colors = colorRampPalette(brewer.pal(11, "RdBu"))(100),
-          main = "Correlation Heatmap")
+```{r}
+myAnnotation_ct_margin <- cpg.annotate(object = mVals, datatype = "array", what = "M", 
+                             analysis.type = "differential", design = design, 
+                             contrasts = TRUE, cont.matrix = contMatrix_ct_margin, 
+                             coef = colnames(contMatrix_ct_margin), arraytype = "450K")
+```
+
+```{r}
+str(myAnnotation_ct_margin)
+```
+
+```{r}
+#identify differentially methylated regions
+DMRs_ct_margin <- dmrcate(myAnnotation_ct_margin, lambda=1000, C=2)
+results.ranges_ct_margin <- extractRanges(DMRs_ct_margin)
+head(results.ranges_ct_margin,6)
+results.ranges_ct_margin
+```
+
+
+```{r}
+# draw the plot for the top DMR
+install.packages(XQuartz)
+par(mfrow=c(1,1))
+ct_margin_DMRplot<-DMR.plot(ranges = results.ranges_ct_margin, dmr = 2, CpGs = bVals, phen.col = cols, 
+         what = "Beta", arraytype = "450K", genome = "hg19")
+
+```
+
+```{r}
+range_DMR_ct_margin<-ranges(results.ranges_ct_margin)
+range_DMR_ct_margin<-data.frame(range_DMR_ct_margin)
+ggplot(range_DMR_ct_margin, aes(x=width)) + geom_histogram(color="darkblue", fill="lightblue",binwidth =100)
+
+chr_names_ct_margin<-table(seqnames(results.ranges_ct_margin))
+dmr_chr_countdf_ct_margin<-data.frame(chromosome=names(chr_names_ct_margin),count=as.numeric(chr_names_ct_margin))
+ggplot(dmr_chr_countdf_ct_margin, aes(x=chromosome,y=count)) + geom_bar(stat="identity",fill="red",width=0.5 )+labs(x = "Chromosome", y = "DMR Count", title = "DMR Counts per Chromosome")+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+GSEA
+```{r}
+gst.region_ct_margin <- goregion(results.ranges_ct_margin, all.cpg=rownames(mVals), 
+                       collection="GO", array.type="450K", plot.bias=TRUE,sig.genes = TRUE)
+
+```
+
+```{r}
+topGSA(gst.region_ct_margin, n=10)
+```
+
+
+
+```{r}
+gst.region.kegg_ct_margin <- goregion(results.ranges_ct_margin, all.cpg=rownames(mVals), 
+                       collection="KEGG", array.type="450K",sig.genes = TRUE)
+
+top_20_pathways_ct_margin<-topGSA(gst.region.kegg_ct_margin, n=10)
+top_20_pathways_ct_margin
 
 
 ```
+
+----------------------------------------------------------------------------Core-Margin------------------------------------------------------------------------------
+```{r}
+contMatrix_core_margin<- makeContrasts(Core-Margin,
+                           levels=design)
+contMatrix_core_margin
+```
+
+```{r}
+# fit the contrasts
+fit2_core_margin <- contrasts.fit(fit, contMatrix_core_margin)
+fit2_core_margin <- eBayes(fit2_core_margin)
+```
+
+
+```{r}
+# look at the numbers of DM CpGs at FDR < 0.05
+summary(decideTests(fit2_core_margin))
+```
+
+```{r}
+# get the table of results for the first contrast (naive - rTreg)
+ann450kSub_core_margin <- ann450k[match(rownames(mVals),ann450k$Name),
+                      c(1:4,12:19,24:ncol(ann450k))]
+DMPs_core_margin <- topTable(fit2_core_margin, num=Inf, coef=1, genelist=ann450kSub_core_margin)
+
+
+DMP_ord_core_margin<-DMPs_core_margin[order(DMPs_core_margin$t),]
+DMP_ord_core_margin<-subset.data.frame(DMP_ord_core_margin,DMP_ord_core_margin$P.Value<0.05)
+tail(DMPs_core_margin)
+head(DMPs_core_margin)
+```
+
+```{r}
+write.table(DMP_ord_core_margin, file="DMPs_core_margin.csv", sep=",", row.names=FALSE)
+```
+
+```{r}
+# plot the top 4 most significantly differentially methylated CpGs 
+par(mfrow=c(2,2))
+sapply(rownames(DMP_ord_core_margin)[1:4], function(cpg){
+  plotCpg(bVals, cpg=cpg, pheno=targets$Sample_Group, ylab = "Beta values")
+})
+dim(DMP_ord_core_margin)
+
+```
+
+```{r}
+#Plot the bottom 4 differentially methylated CpGs
+par(mfrow=c(2,2))
+sapply(tail(rownames(DMP_ord_core_margin,4)), function(cpg){
+  plotCpg(bVals, cpg=cpg, pheno=targets$Sample_Group, ylab = "Beta values")
+})
+tail(DMP_ord_core_margin,4)
+dim(DMP_ord_core_margin)
+```
+
+```{r}
+myAnnotation_core_margin <- cpg.annotate(object = mVals, datatype = "array", what = "M", 
+                             analysis.type = "differential", design = design, 
+                             contrasts = TRUE, cont.matrix = contMatrix_core_margin, 
+                             coef = colnames(contMatrix_core_margin), arraytype = "450K" )
+myAnnotation_core_margin_FDR <- cpg.annotate(object = mVals, datatype = "array", what = "M", 
+                             analysis.type = "differential", design = design, 
+                             contrasts = TRUE, cont.matrix = contMatrix_core_margin, 
+                             coef = colnames(contMatrix_core_margin), arraytype = "450K",fdr = 0.5 )
+```
+
+```{r}
+str(myAnnotation_core_margin)
+str(myAnnotation_core_margin_FDR)
+```
+
+```{r}
+#identify differential methylated regions
+DMRs_core_margin <- dmrcate(myAnnotation_core_margin, lambda=500, C=2)
+results.ranges_core_margin <- extractRanges(DMRs_core_margin)
+head(results.ranges_core_margin,6)
+```
+
+
+--------------------------------------------------PlasmaDNA-Core------------------------------------------
+
+```{r}
+contMatrix_plasmaDNA_core<- makeContrasts(Plasma_DNA-Core,
+                           levels=design)
+contMatrix_plasmaDNA_core
+```
+
+```{r}
+# fit the contrasts
+fit2_plasmaDNA_core <- contrasts.fit(fit, contMatrix_plasmaDNA_core)
+fit2_plasmaDNA_core <- eBayes(fit2_plasmaDNA_core)
+```
+
+
+```{r}
+# look at the numbers of DM CpGs at FDR < 0.05
+summary(decideTests(fit2_plasmaDNA_core))
+```
+
+```{r}
+# get the table of results for the first contrast (naive - rTreg)
+ann450kSub_plasmaDNA_core <- ann450k[match(rownames(mVals),ann450k$Name),
+                      c(1:4,12:19,24:ncol(ann450k))]
+DMPs_plasmaDNA_core<- topTable(fit2_plasmaDNA_core, num=Inf, coef=1, genelist=ann450kSub_plasmaDNA_core)
+
+
+DMP_ord_plasmaDNA_core<-DMPs_plasmaDNA_core[order(DMPs_plasmaDNA_core$t),]
+DMP_ord_plasmaDNA_core<-subset.data.frame(DMP_ord_plasmaDNA_core,DMP_ord_plasmaDNA_core$P.Value<0.05)
+tail(DMPs_plasmaDNA_core)
+head(DMPs_plasmaDNA_core)
+```
+
+```{r}
+write.table(DMP_ord_plasmaDNA_core, file="DMPs_plasmaDNA_core.csv", sep=",", row.names=FALSE)
+```
+
+```{r}
+# plot the top 4 most significantly differentially methylated CpGs 
+par(mfrow=c(2,2))
+sapply(rownames(DMP_ord_plasmaDNA_core)[1:4], function(cpg){
+  plotCpg(bVals, cpg=cpg, pheno=targets$Sample_Group, ylab = "Beta values")
+})
+dim(DMP_ord_plasmaDNA_core)
+
+```
+
+```{r}
+#Plot the bottom 4 differentially methylated CpGs
+par(mfrow=c(2,2))
+sapply(tail(rownames(DMP_ord_plasmaDNA_core,4)), function(cpg){
+  plotCpg(bVals, cpg=cpg, pheno=targets$Sample_Group, ylab = "Beta values")
+})
+tail(DMP_ord_plasmaDNA_core,4)
+dim(DMP_ord_plasmaDNA_core)
+```
+
+```{r}
+myAnnotation_plasmaDNA_core <- cpg.annotate(object = mVals, datatype = "array", what = "M", 
+                             analysis.type = "differential", design = design, 
+                             contrasts = TRUE, cont.matrix = contMatrix_plasmaDNA_core, 
+                             coef = colnames(contMatrix_plasmaDNA_core), arraytype = "450K" )
+
+```
+
+```{r}
+str(myAnnotation_plasmaDNA_core)
+
+```
+
+```{r}
+#identify differential methylated regions
+DMRs_plasmaDNA_core <- dmrcate(myAnnotation_plasmaDNA_core, lambda=500, C=2)
+results.ranges_plasmaDNA_core <- extractRanges(DMRs_plasmaDNA_core)
+head(results.ranges_plasmaDNA_core,6)
+results.ranges_plasmaDNA_core
+```
+
+```{r}
+# set up the grouping variables and colours
+groups <- pal[1:length(unique(targets$Sample_Group))]
+names(groups) <- levels(factor(targets$Sample_Group))
+cols <- groups[as.character(factor(targets$Sample_Group))]
+cols
+```
+
+```{r}
+# draw the plot for the top DMR
+par(mfrow=c(1,1))
+DMR.plot(ranges = results.ranges_plasmaDNA_core, dmr = 2, CpGs = bVals, phen.col = cols, 
+         what = "Beta", arraytype = "450K", genome = "hg19")
+```
+
+```{r}
+
+library(GenomicRanges)
+library(ggplot2)
+range_DMR_plasmaDNA_core<-ranges(results.ranges_plasmaDNA_core)
+range_DMR_plasmaDNA_core<-data.frame(range_DMR_plasmaDNA_core)
+ggplot(range_DMR_plasmaDNA_core, aes(x=width)) + geom_histogram(color="darkblue", fill="lightblue",binwidth =100)
+
+chr_names_plasmaDNA_core<-table(seqnames(results.ranges_plasmaDNA_core))
+dmr_chr_countdf_plasmaDNA_core<-data.frame(chromosome=names(chr_names_plasmaDNA_core),count=as.numeric(chr_names_plasmaDNA_core))
+ggplot(dmr_chr_countdf_plasmaDNA_core, aes(x=chromosome,y=count)) + geom_bar(stat="identity",fill="red",width=0.5 )+labs(x = "Chromosome", y = "DMR Count", title = "DMR Counts per Chromosome")+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+GSEA
+```{r}
+
+library(missMethyl)
+gst.region_plasmaDNA_core <- goregion(results.ranges_plasmaDNA_core, all.cpg=rownames(mVals), 
+                       collection="GO", array.type="450K", plot.bias=TRUE,sig.genes = TRUE)
+
+```
+
+```{r}
+topGSA(gst.region_plasmaDNA_core, n=10)
+```
+
+
+
+```{r}
+gst.region.kegg_plasmaDNA_core <- goregion(results.ranges_plasmaDNA_core, all.cpg=rownames(mVals), 
+                       collection="KEGG", array.type="450K",sig.genes = TRUE)
+
+top_20_pathways_plasmaDNA_core<-topGSA(gst.region.kegg_plasmaDNA_core, n=10)
+top_20_pathways_plasmaDNA_core
+```
+
+Finding Overlaps in DMR between Plasma-Margin and Plamsa-Core
+```{r}
+Ct_Core_Mar_DMR<-intersect(as.character(results.ranges_plasmaDNA_core),as.character(results.ranges_ct_margin))
+
+
+length(Ct_Core_Mar_DMR)
+
+
+venn_ct_core_mar_DMR <- venn.diagram(list(as.character(
+  results.ranges_plasmaDNA_core),as.character(results.ranges_ct_margin)),
+  category = c("Plasma-Margin", "Plasma-Core"),
+  fill = c("skyblue", "mediumorchid"),
+  alpha = 0.5,  # Transparency of set regions
+  filename = NULL  # Set this to a file name if you want to save the plot as an image
+)
+subsetByOverlaps(results.ranges_plasmaDNA_core,results.ranges_ct_margin)
+grid.newpage()
+grid.draw(venn_ct_core_mar_DMR)
+
+#Convert overlapping region back into GRange object
+convert_to_granges <- function(Plasma_Core_Mar_DMR) {
+  # Split the character ranges into sequence names, start positions, and end positions
+  split_ranges <- strsplit(Plasma_Core_Mar_DMR, "[:-]")
+  seqnames <- sapply(split_ranges, "[[", 1)
+  start <- as.numeric(sapply(split_ranges, "[[", 2))
+  end <- as.numeric(sapply(split_ranges, "[[", 3))
+
+  # Create the GRanges object
+  granges_object <- GRanges(seqnames = seqnames, ranges = IRanges(start = start, end = end))
+
+  return(granges_object)
+}
+
+# Convert character ranges to GRanges--All 3 overlaps
+granges_object_3_overlap <- convert_to_granges(Mar_Core_Ct_DMR)
+
+granges_object_3_overlap
+
+overlap_DMR_3<-paste(results.ranges_core_normal[4,],results.ranges_core_normal[8,])
+
+
+#GSEA KEGG all 3 overlap 
+gst.region.kegg_3_overlap <- goregion(granges_object_3_overlap, all.cpg=rownames(mVals), 
+                       collection="KEGG", array.type="450K",sig.genes = TRUE)
+
+top_5_pathways_3_overlap_KEGG<-topGSA(gst.region.kegg_3_overlap, n=5)
+top_5_pathways_3_overlap_KEGG
+
+gst.region.GO_3_overlap <- goregion(granges_object_3_overlap, all.cpg=rownames(mVals), 
+                       collection="GO", array.type="450K",sig.genes = TRUE)
+top_5_pathways_3_overlap_GO<-topGSA(gst.region.GO_3_overlap, n=5)
+top_5_pathways_3_overlap_GO
+```
+
+Finding similarity between margin core and plasma
+```{r}
+bval_mar<-bVals[,c(4,8,10,12,14,16)]
+bval_core<-bVals[,c(6,9,25,26,27,28)]
+bval_plasma<-bVals[,c(1,3,21,22,23,24)]
+
+corr_mtx_mar_cor<-cor(bval_core,bval_mar)
+corr_mtx_mar_plasma<-cor(bval_mar,bval_plasma)
+corr_mtx_plasma_core<-cor(bval_core,bval_plasma)
+
+cor_treshold<-0.90
+similar_regions_mar_core<-which(corr_mtx_mar_cor>cor_treshold)
+similar_regions_mar_plasma<-which(corr_mtx_mar_plasma>cor_treshold)
+similar_regions_plasma_core<-which(corr_mtx_plasma_core>cor_treshold)
+
+
+
+#Calculating percentage of similarity based on correlation matrix
+total_regions<-length(corr_mtx_mar_plasma)
+num_similar_regions_mar_core<-length(similar_regions_mar_core)
+percent_sim_mar_core<-(num_similar_regions_mar_core/total_regions)*100
+
+num_similar_regions_mar_plasma<-length(similar_regions_mar_plasma)
+percent_sim_mar_plasma<-(num_similar_regions_mar_plasma/total_regions)*100
+
+num_similar_regions_plasma_core<-length(similar_regions_plasma_core)
+percent_sim_plasma_core<-(num_similar_regions_plasma_core/total_regions)*100
+
+cat("Percentage of similar methylation (Margin vs Core):", percent_sim_mar_core, "%\n")
+cat("Percentage of similar methylation (Margin vs Plasma):", percent_sim_mar_plasma, "%\n")
+cat("Percentage of similar methylation (Plasma vs Core):", percent_sim_plasma_core, "%\n")
+
+heatmap_cor_plasma_core<-heatmaply(head(corr_mtx_mar_plasma,200), 
+          colors = viridis(100),
+          main = "Correlation Heatmap")
+heatmap_cor_plasma_core
+
+
+```
+
+
+
+
+
+
+
+
+-----------------------------------------------------------------------Patient with recurrance-----------------------------------------------------------------------
+```{r}
+recurr_107_bvals<-bVals[,c(9,10,11,17,18,19)]
+
+corr_mtx_107<-cor(recurr_107_bvals ,method = "pearson")
+corr_mtx_107
+library(viridis)
+heatmap_res_107<-heatmaply(corr_mtx_107, 
+          colors = viridis(100),
+          main = "Correlation Heatmap")
+heatmap_res_107
+```
+
 
 
