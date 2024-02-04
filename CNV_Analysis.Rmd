@@ -1,0 +1,910 @@
+```{r}
+set.seed(2023)
+# set up a path to the data directory
+dataDirectory <- "~/Downloads/idat files 19/Thesis-idat"
+# list the files
+list.files(dataDirectory, recursive = TRUE)
+# get the 450k annotation data
+ann450k_CNV <- getAnnotation(IlluminaHumanMethylation450kanno.ilmn12.hg19)
+head(ann450k_CNV)
+# read in the sample sheet for the experiment
+targets_CNV <- read.metharray.sheet(dataDirectory, pattern="GB160121-KP Sample Sheet 450k_noHPV.csv")
+normal_CNV<-read.metharray.sheet(dataDirectory, pattern="GB160121-KP Sample Sheet 450k_normal.csv")
+target_all<-read.metharray.sheet(dataDirectory, pattern = "GB160121-KP Sample Sheet 450k_alltissues copy 2")
+# read in the raw data from the IDAT files
+rgSet_CNV <- read.metharray.exp(targets=targets_CNV)
+rgSet_normal<-read.metharray.exp(targets=normal_CNV)
+rgSet_all<-read.metharray.exp(targets=target_all)
+
+# give the samples descriptive names
+targets_CNV$ID <- paste(targets_CNV$Sample_Name,targets_CNV$Sample_Group,sep=".")
+sampleNames(rgSet_CNV) <- targets_CNV$ID
+
+normal_CNV$ID<-paste(normal_CNV$Sample_Name,normal_CNV$Sample_Group,sep=".")
+sampleNames(rgSet_normal)<-normal_CNV$ID
+
+target_all$ID <- paste(target_all$Sample_Name,target_all$Sample_Group,sep=".")
+sampleNames(rgSet_all) <- target_all$ID
+
+# calculate the detection p-values
+detP_CNV <- detectionP(rgSet_CNV)
+detP_normal<-detectionP(rgSet_normal)
+detP_all<-detectionP(rgSet_all)
+# remove poor quality samples
+keep_CNV <- colMeans(detP_CNV) < 0.05
+rgSet_CNV <- rgSet_CNV[,keep_CNV]
+
+keep_normal<-colMeans(detP_normal)<0.05
+rgSet_normal<-rgSet_normal[,keep_normal]
+
+keep_all<-colMeans(detP_all)<0.05
+rgSet_all<-rgSet_all[,keep_all]
+# remove poor quality samples from targets data
+targets_CNV <- targets_CNV[keep_CNV,]
+normal_CNV<-normal_CNV[keep_normal,]
+target_all<-target_all[keep_all,]
+
+# remove poor quality samples from detection p-value table
+detP_CNV <- detP_CNV[,keep_CNV]
+detP_normal<-detP_normal[,keep_normal]
+detP_all <- detP_all[,keep_all]
+# normalize the data; this results in a GenomicRatioSet object
+mSetSq_CNV <- preprocessFunnorm(rgSet_CNV) 
+mSetSq_normal<-preprocessFunnorm(rgSet_normal)
+mSetSq_all <- preprocessFunnorm(rgSet_all) 
+
+```
+
+```{r}
+library(minfi)
+library(conumee)
+library("minfiData")
+```
+
+
+The following code is to annotate the data with known methylted regions
+```{r}
+#Data from DMR  analysis in Thesis_HNSCC RMD. Creating a dataframe with teh overlapping 279 regions and corresponding details.
+data(exclude_regions)
+data(detail_regions)
+head(detail_region_DMR_all, n = 2)
+head(granges_object_3_overlap,n=2)
+sorted_df <- overlapping_DMR[order(overlapping_DMR$HMFDR), ]
+top_20_DMR<-sorted_df[1:20,]
+top_20_DMR[6,13]<-"RP11-120J1.1"
+top_20_DMR<-rbind(top_20_DMR,top_20_DMR[6,])
+top_20_DMR[21,13]<-"NFIB"
+top_20_DMR[12,13]<-"DGKD"
+top_20_DMR<-rbind(top_20_DMR,top_20_DMR[12,])
+top_20_DMR[22,13]<-"AC019221.4"
+
+top_20_DMR[13,13]<-"C9orf3"
+top_20_DMR<-rbind(top_20_DMR,top_20_DMR[13,])
+top_20_DMR[23,13]<-"MIR3074"
+top_20_DMR<-top_20_DMR[c(-3,-10,-11,-20),]
+
+#Creating a GRNAGE object using the overlapping 279 regions for annotation
+detail_region_DMR_all<-GRanges(seqnames = Rle(top_20_DMR$seqnames),
+                               ranges=IRanges(paste(top_20_DMR$start,"-",top_20_DMR$end)),
+                               name=top_20_DMR$overlapping.genes,
+                               strand = top_20_DMR$strand #Rle(c("-","-","+","+","+","-","-","-","+","+","+","-","+","+","+","-","-","+","-")
+                               )
+#Creating a GRNAGE object using the 19 TCGA Genes for annotation
+detail_regions_TCGA19<-GRanges(
+    seqnames = Rle(c("chr9", "chr4", "chr17", "chr2","chr14","chr3","chr9","chr12","chr5","chr6","chr3","chr11","chr4","chr13","chr5","chr14","chr2","chr2","chr10")),
+    ranges = IRanges(c(21967752,186587794,7661779,201233443,22971177,179148114,136494433,49018975,177131830,29941260,30606601,532242,152320544,48303744,68215740,102777449,177218667,224470150,87862638), end = c(21995301,186726722,7687538,201361836,22982551,179240093,136546048,49060794,177300213,29949572,30694142,537321,152536092,48599436,68301821,102911500,177392756,224585397,87971930)), name = c("CDKN2A","FAT1","TP53","CASP8","AJUBA","PIK3CA","NOTCH1","KMT2D","NSD1","HLA-A","TGFBR2","HRAS","FBXW7","RB1","PIK3R1","TRAF3","NFE2L2","CUL3","PTEN") ,
+strand = Rle(strand(c("-", "-","-" ,"+", "-","+","-","-","+","+","+","-","-","+","+","+","+","-","+"))))
+
+anno_CNV <- CNV.create_anno(array_type = "450k", detail_regions = detail_region_DMR_all)
+anno_CNV
+
+anno_TCGA19<-CNV.create_anno(array_type = "450k", detail_regions = detail_regions_TCGA19)
+anno_TCGA19
+```
+```{r}
+Mset_dat<-preprocessIllumina(rgSet_CNV)
+Msei_norm<-preprocessIllumina(rgSet_normal)
+target.data <- CNV.load(Mset_dat)
+normal.data<-CNV.load(Msei_norm)
+
+Mset_dat_all<-preprocessIllumina(rgSet_all)
+Msei_norm<-preprocessIllumina(rgSet_normal)
+target_all.data <- CNV.load(Mset_dat_all)
+normal.data<-CNV.load(Msei_norm)
+```
+
+
+
+```{r}
+genomeplot<-function(obj){
+  CNV.genomeplot(obj)
+}
+
+pdf("~/Desktop/Latest Figures/20_DMR_genes_GenomePLot.pdf",height = 10, width=20)
+CNV_DMR_list<-c(mar_107,core_107,plasma_107_TC19,plasmaB_107,plasmaR_107,mar_199 ,core_199 ,plasma_199 ,plasmaB_199 ,mar_264 ,core_264 ,plasma_264 ,mar_276 ,core_276 ,plasma_276 ,mar_288 ,core_288 ,plasma_288 )
+lapply(CNV_DMR_list,genomeplot)
+dev.off()
+
+pdf("~/Desktop/Latest Figures/268_20_DMR_genes_GenomePLot.pdf")
+CNV.genomeplot(core_268)
+CNV.genomeplot(plasma_268)
+dev.off()
+ 
+pdf("~/Desktop/Latest Figures/268_19_TCGAgenes_GenomePLot.pdf")
+CNV.genomeplot(core_268_TC19)
+CNV.genomeplot(plasma_268_TC19)
+dev.off()
+
+
+```
+
+```{r}
+#Function to create genome plot
+generate_conumee_plot <- function(data) {
+c(CNV.detailplot(data,name="CDKN2A"),
+CNV.detailplot(data,name="FAT1"),
+CNV.detailplot(data,name="TP53"),
+CNV.detailplot(data,name="CASP8"),
+CNV.detailplot(data,name="AJUBA"),
+CNV.detailplot(data,name="PIK3CA"),
+CNV.detailplot(data,name="NOTCH1"),
+CNV.detailplot(data,name="KMT2D"),
+CNV.detailplot(data,name="NSD1"),
+CNV.detailplot(data,name="HLA-A"),
+CNV.detailplot(data,name="TGFBR2"),
+CNV.detailplot(data,name="HRAS"),
+CNV.detailplot(data,name="FBXW7"),
+CNV.detailplot(data,name="RB1"),
+CNV.detailplot(data,name="PIK3R1"),
+CNV.detailplot(data,name="TRAF3"),
+CNV.detailplot(data,name="NFE2L2"),
+CNV.detailplot(data,name="CUL3"),
+CNV.detailplot(data,name="PTEN"))
+}
+
+#19TCGA gene specific plots for 
+
+pdf("~/Desktop/Latest Figures/tcga19_genome_107_mar.pdf")
+par( mfrow= c(6,3))
+lapply(c(mar_107_TC19), generate_conumee_plot)
+dev.off()
+
+pdf("~/Desktop/Latest Figures/tcga19_genome_107_core.pdf")
+par( mfrow= c(6,3))
+lapply(c(core_107_TC19), generate_conumee_plot)
+dev.off()
+
+pdf("~/Desktop/Latest Figures/tcga19_genome_107_plamsa.pdf")
+par( mfrow= c(6,3))
+lapply(c(plasma_107_TC19), generate_conumee_plot)
+dev.off()
+
+pdf("~/Desktop/Latest Figures/tcga19_genome_107_plasmaB.pdf")
+par( mfrow= c(6,3))
+lapply(c(plasmaB_107_TC19), generate_conumee_plot)
+dev.off()
+
+pdf("~/Desktop/Latest Figures/tcga19_genome_107_plasmaR.pdf")
+par( mfrow= c(6,3))
+lapply(c(plasmaR_107_TC19), generate_conumee_plot)
+dev.off()
+
+pdf("~/Desktop/Latest Figures/tcga19_genome_199_mar.pdf")
+par( mfrow= c(6,3))
+lapply(c(mar_199_TC19), generate_conumee_plot)
+dev.off()
+
+pdf("~/Desktop/Latest Figures/tcga19_genome_199_core.pdf")
+par( mfrow= c(6,3))
+lapply(c(core_199_TC19), generate_conumee_plot)
+dev.off()
+
+pdf("~/Desktop/Latest Figures/tcga19_genome_199_plasma.pdf")
+par( mfrow= c(6,3))
+lapply(c(plasma_199_TC19), generate_conumee_plot)
+dev.off()
+
+pdf("~/Desktop/Latest Figures/tcga19_genome_199_plasmaB.pdf")
+par( mfrow= c(6,3))
+lapply(c(plasmaB_199_TC19), generate_conumee_plot)
+dev.off()
+
+pdf("~/Desktop/Latest Figures/tcga19_genome_264_mar.pdf")
+par( mfrow= c(6,3))
+lapply(c(mar_264_TC19), generate_conumee_plot)
+dev.off()
+
+pdf("~/Desktop/Latest Figures/tcga19_genome_264_core.pdf")
+par( mfrow= c(6,3))
+lapply(c(core_264_TC19), generate_conumee_plot)
+dev.off()
+
+pdf("~/Desktop/Latest Figures/tcga19_genome_264_plasma.pdf")
+par( mfrow= c(6,3))
+lapply(c(plasma_264_TC19), generate_conumee_plot)
+dev.off()
+
+pdf("~/Desktop/Latest Figures/tcga19_genome_276_mar.pdf")
+par( mfrow= c(6,3))
+lapply(c(mar_276_TC19), generate_conumee_plot)
+dev.off()
+
+pdf("~/Desktop/Latest Figures/tcga19_genome_276_core.pdf")
+par( mfrow= c(6,3))
+lapply(c(core_276_TC19), generate_conumee_plot)
+dev.off()
+
+pdf("~/Desktop/Latest Figures/tcga19_genome_276_plasma.pdf")
+par( mfrow= c(6,3))
+lapply(c(plasma_276_TC19), generate_conumee_plot)
+dev.off()
+
+pdf("~/Desktop/Latest Figures/tcga19_genome_288_mar.pdf")
+par( mfrow= c(6,3))
+lapply(c(mar_288_TC19), generate_conumee_plot)
+dev.off()
+
+pdf("~/Desktop/Latest Figures/tcga19_genome_288_core.pdf")
+par( mfrow= c(6,3))
+lapply(c(core_288_TC19), generate_conumee_plot)
+dev.off()
+
+pdf("~/Desktop/Latest Figures/tcga19_genome_288_plasma.pdf")
+par( mfrow= c(6,3))
+lapply(c(plasma_288_TC19), generate_conumee_plot)
+dev.off()
+
+
+#TCGA Genome Plot
+pdf("~/Desktop/Latest Figures/TCGA_GenomePlot/TCGA_GenomePLot.pdf", height = 10, width=20)
+par(mfrow=c(5,4))
+CNV_TCGA_list<-c(mar_107_TC19,core_107_TC19,plasma_107_TC19,plasmaB_107_TC19,plasmaR_107_TC19,mar_199_TC19,core_199_TC19,plasma_199_TC19,plasmaB_199_TC19,mar_264_TC19,core_264_TC19,plasma_264_TC19,mar_276_TC19,core_276_TC19,plasma_276_TC19,mar_288_TC19,core_288_TC19,plasma_288_TC19)
+lapply(CNV_TCGA_list,genomeplot)
+dev.off()
+
+
+generate_TCGA_19 <- function(data) {
+CNV.detailplot_wrap(data)
+}
+
+pdf("~/Desktop/Latest Figures/TCGA_GenomePLot.pdf", height = 10, width=20)
+par(mfrow=c(5,4))
+CNV_TCGA_list<-c(mar_107_TC19,core_107_TC19,plasma_107_TC19,plasmaB_107_TC19,plasmaR_107_TC19,mar_199_TC19,core_199_TC19,plasma_199_TC19,plasmaB_199_TC19,mar_264_TC19,core_264_TC19,plasma_264_TC19,mar_276_TC19,core_276_TC19,plasma_276_TC19,mar_288_TC19,core_288_TC19,plasma_288_TC19,core_268_TC19,plasma_268_TC19)
+lapply(CNV_TCGA_list,generate_TCGA_19)
+dev.off()
+
+```
+
+```{r}
+##Anno top 20 most significant DMR amongst 279 overlapping between C-N, M-N and P-N
+
+mar_107 <- CNV.fit(target_all.data["107M"], normal.data, anno_CNV)
+mar_107 <- CNV.bin(mar_107)
+mar_107 <- CNV.detail(mar_107)
+mar_107 <- CNV.segment(mar_107)
+
+core_107 <- CNV.fit(target_all.data["107C"], normal.data, anno_CNV)
+core_107 <- CNV.bin(core_107)
+core_107 <- CNV.detail(core_107)
+core_107 <- CNV.segment(core_107)
+
+plasma_107 <- CNV.fit(target_all.data["107A"], normal.data, anno_CNV)
+plasma_107 <- CNV.bin(plasma_107)
+plasma_107 <- CNV.detail(plasma_107)
+plasma_107 <- CNV.segment(plasma_107)
+
+plasmaB_107 <- CNV.fit(target_all.data["107B"], normal.data, anno_CNV)
+plasmaB_107 <- CNV.bin(plasmaB_107)
+plasmaB_107 <- CNV.detail(plasmaB_107)
+plasmaB_107 <- CNV.segment(plasmaB_107)
+
+plasmaR_107 <- CNV.fit(target_all.data["107R"], normal.data, anno_CNV)
+plasmaR_107 <- CNV.bin(plasmaR_107)
+plasmaR_107 <- CNV.detail(plasmaR_107)
+plasmaR_107 <- CNV.segment(plasmaR_107)
+
+mar_199 <- CNV.fit(target_all.data["199M"], normal.data, anno_CNV)
+mar_199 <- CNV.bin(mar_199)
+mar_199 <- CNV.detail(mar_199)
+mar_199 <- CNV.segment(mar_199)
+
+core_199 <- CNV.fit(target_all.data["199C"], normal.data, anno_CNV)
+core_199 <- CNV.bin(core_199)
+core_199 <- CNV.detail(core_199)
+core_199 <- CNV.segment(core_199)
+
+plasma_199 <- CNV.fit(target_all.data["199A"], normal.data, anno_CNV)
+plasma_199 <- CNV.bin(plasma_199)
+plasma_199 <- CNV.detail(plasma_199)
+plasma_199 <- CNV.segment(plasma_199)
+
+plasmaB_199 <- CNV.fit(target_all.data["199B"], normal.data, anno_CNV)
+plasmaB_199 <- CNV.bin(plasmaB_199)
+plasmaB_199 <- CNV.detail(plasmaB_199)
+plasmaB_199 <- CNV.segment(plasmaB_199)
+
+mar_264 <- CNV.fit(target_all.data["264M"], normal.data, anno_CNV)
+mar_264 <- CNV.bin(mar_264)
+mar_264 <- CNV.detail(mar_264)
+mar_264 <- CNV.segment(mar_264)
+
+core_264 <- CNV.fit(target_all.data["264C"], normal.data, anno_CNV)
+core_264 <- CNV.bin(core_264)
+core_264 <- CNV.detail(core_264)
+core_264 <- CNV.segment(core_264)
+
+plasma_264 <- CNV.fit(target_all.data["264A"], normal.data, anno_CNV)
+plasma_264 <- CNV.bin(plasma_264)
+plasma_264 <- CNV.detail(plasma_264)
+plasma_264 <- CNV.segment(plasma_264)
+
+mar_276 <- CNV.fit(target_all.data["276M"], normal.data, anno_CNV)
+mar_276 <- CNV.bin(mar_276)
+mar_276 <- CNV.detail(mar_276)
+mar_276 <- CNV.segment(mar_276)
+
+core_276 <- CNV.fit(target_all.data["276C"], normal.data, anno_CNV)
+core_276 <- CNV.bin(core_276)
+core_276 <- CNV.detail(core_276)
+core_276 <- CNV.segment(core_276)
+
+plasma_276 <- CNV.fit(target_all.data["276A"], normal.data, anno_CNV)
+plasma_276 <- CNV.bin(plasma_276)
+plasma_276 <- CNV.detail(plasma_276)
+plasma_276 <- CNV.segment(plasma_276)
+
+mar_288 <- CNV.fit(target_all.data["288M"], normal.data, anno_CNV)
+mar_288 <- CNV.bin(mar_288)
+mar_288 <- CNV.detail(mar_288)
+mar_288 <- CNV.segment(mar_288)
+
+core_288 <- CNV.fit(target_all.data["288C"], normal.data, anno_CNV)
+core_288 <- CNV.bin(core_288)
+core_288 <- CNV.detail(core_288)
+core_288 <- CNV.segment(core_288)
+
+plasma_288 <- CNV.fit(target_all.data["288A"], normal.data, anno_CNV)
+plasma_288 <- CNV.bin(plasma_288)
+plasma_288 <- CNV.detail(plasma_288)
+plasma_288 <- CNV.segment(plasma_288)
+
+mar_124 <- CNV.fit(target_all.data["124M"], normal.data, anno_CNV)
+mar_124 <- CNV.bin(mar_124)
+mar_124 <- CNV.detail(mar_124)
+mar_124 <- CNV.segment(mar_124)
+
+core_124 <- CNV.fit(target_all.data["124C"], normal.data, anno_CNV)
+core_124 <- CNV.bin(core_124)
+core_124 <- CNV.detail(core_124)
+core_124 <- CNV.segment(core_124)
+
+plasma_124 <- CNV.fit(target_all.data["124A"], normal.data, anno_CNV)
+plasma_124 <- CNV.bin(plasma_124)
+plasma_124 <- CNV.detail(plasma_124)
+plasma_124 <- CNV.segment(plasma_124)
+
+mar_207 <- CNV.fit(target_all.data["207M"], normal.data, anno_CNV)
+mar_207 <- CNV.bin(mar_207)
+mar_207 <- CNV.detail(mar_207)
+mar_207 <- CNV.segment(mar_207)
+
+core_207 <- CNV.fit(target_all.data["207C"], normal.data, anno_CNV)
+core_207 <- CNV.bin(core_207)
+core_207 <- CNV.detail(core_207)
+core_207 <- CNV.segment(core_207)
+
+plasma_207 <- CNV.fit(target_all.data["207A"], normal.data, anno_CNV)
+plasma_207 <- CNV.bin(plasma_207)
+plasma_207 <- CNV.detail(plasma_207)
+plasma_207 <- CNV.segment(plasma_207)
+
+mar_166 <- CNV.fit(target_all.data["166M"], normal.data, anno_CNV)
+mar_166 <- CNV.bin(mar_166)
+mar_166 <- CNV.detail(mar_166)
+mar_166 <- CNV.segment(mar_166)
+
+core_166 <- CNV.fit(target_all.data["166C"], normal.data, anno_CNV)
+core_166 <- CNV.bin(core_166)
+core_166 <- CNV.detail(core_166)
+core_166 <- CNV.segment(core_166)
+
+plasma_166 <- CNV.fit(target_all.data["166A"], normal.data, anno_CNV)
+plasma_166 <- CNV.bin(plasma_166)
+plasma_166 <- CNV.detail(plasma_166)
+plasma_166 <- CNV.segment(plasma_166)
+
+plasma_268 <- CNV.fit(target_all.data["268A"], normal.data, anno_CNV)
+plasma_268 <- CNV.bin(plasma_268)
+plasma_268 <- CNV.detail(plasma_268)
+plasma_268 <- CNV.segment(plasma_268)
+
+core_268 <- CNV.fit(target_all.data["268C"], normal.data, anno_CNV)
+core_268 <- CNV.bin(core_268)
+core_268 <- CNV.detail(core_268)
+core_268 <- CNV.segment(core_268)
+
+generate_DMR_conumee <- function(data) {
+CNV.detailplot_wrap(data)
+}
+
+pdf("~/Desktop/Latest Figures/DMR_GenomePLot_detailplotwrap.pdf", height = 10, width=20)
+par(mfrow=c(5,4))
+CNV_TCGA_list<-c(mar_107,core_107,plasma_107,plasmaB_107,plasmaR_107,mar_199,core_199,plasma_199,plasmaB_199,mar_264,core_264,plasma_264,mar_276,core_276,plasma_276,mar_288,core_288,plasma_288,core_268,plasma_268,mar_124,core_124,plasma_124,mar_207,core_207,plasma_207,mar_166,core_166,plasma_166)
+lapply(CNV_TCGA_list,generate_DMR_conumee)
+dev.off()
+
+pdf("~/Desktop/Latest Figures/DMR_GenomePLot_genomeplot.pdf", height = 10, width=20)
+par(mfrow=c(5,4))
+CNV_list<-c(mar_107,core_107,plasma_107,plasmaB_107,plasmaR_107,mar_199,core_199,plasma_199,plasmaB_199,mar_264,core_264,plasma_264,mar_276,core_276,plasma_276,mar_288,core_288,plasma_288,core_268,plasma_268,mar_124,core_124,plasma_124,mar_207,core_207,plasma_207,mar_166,core_166,plasma_166)
+lapply(CNV_TCGA_list,genomeplot)
+dev.off()
+```
+
+```{r}
+#Create CNV analysis for TCGA annoatated dataset
+
+mar_107_TCGA19 <- CNV.fit(target_all.data["107M"], normal.data, anno_TCGA19)
+mar_107_TCGA19 <- CNV.bin(mar_107_TCGA19)
+mar_107_TCGA19 <- CNV.detail(mar_107_TCGA19)
+mar_107_TCGA19 <- CNV.segment(mar_107_TCGA19)
+
+core_107_TCGA19 <- CNV.fit(target_all.data["107C"], normal.data, anno_TCGA19)
+core_107_TCGA19 <- CNV.bin(core_107_TCGA19)
+core_107_TCGA19 <- CNV.detail(core_107_TCGA19)
+core_107_TCGA19 <- CNV.segment(core_107_TCGA19)
+
+plasma_107_TCGA19 <- CNV.fit(target_all.data["107A"], normal.data, anno_TCGA19)
+plasma_107_TCGA19 <- CNV.bin(plasma_107_TCGA19)
+plasma_107_TCGA19 <- CNV.detail(plasma_107_TCGA19)
+plasma_107_TCGA19 <- CNV.segment(plasma_107_TCGA19)
+
+plasmaB_107_TCGA19 <- CNV.fit(target_all.data["107B"], normal.data, anno_TCGA19)
+plasmaB_107_TCGA19 <- CNV.bin(plasmaB_107_TCGA19)
+plasmaB_107_TCGA19 <- CNV.detail(plasmaB_107_TCGA19)
+plasmaB_107_TCGA19 <- CNV.segment(plasmaB_107_TCGA19)
+
+plasmaR_107_TCGA19 <- CNV.fit(target_all.data["107R"], normal.data, anno_TCGA19)
+plasmaR_107_TCGA19 <- CNV.bin(plasmaR_107_TCGA19)
+plasmaR_107_TCGA19 <- CNV.detail(plasmaR_107_TCGA19)
+plasmaR_107_TCGA19 <- CNV.segment(plasmaR_107_TCGA19)
+
+mar_199_TCGA19 <- CNV.fit(target_all.data["199M"], normal.data, anno_TCGA19)
+mar_199_TCGA19 <- CNV.bin(mar_199_TCGA19)
+mar_199_TCGA19 <- CNV.detail(mar_199_TCGA19)
+mar_199_TCGA19 <- CNV.segment(mar_199_TCGA19)
+
+core_199_TCGA19 <- CNV.fit(target_all.data["199C"], normal.data, anno_TCGA19)
+core_199_TCGA19 <- CNV.bin(core_199_TCGA19)
+core_199_TCGA19 <- CNV.detail(core_199_TCGA19)
+core_199_TCGA19 <- CNV.segment(core_199_TCGA19)
+
+plasma_199_TCGA19 <- CNV.fit(target_all.data["199A"], normal.data, anno_TCGA19)
+plasma_199_TCGA19 <- CNV.bin(plasma_199_TCGA19)
+plasma_199_TCGA19 <- CNV.detail(plasma_199_TCGA19)
+plasma_199_TCGA19 <- CNV.segment(plasma_199_TCGA19)
+
+plasmaB_199_TCGA19 <- CNV.fit(target_all.data["199B"], normal.data, anno_TCGA19)
+plasmaB_199_TCGA19 <- CNV.bin(plasmaB_199_TCGA19)
+plasmaB_199_TCGA19 <- CNV.detail(plasmaB_199_TCGA19)
+plasmaB_199_TCGA19 <- CNV.segment(plasmaB_199_TCGA19)
+
+mar_264_TCGA19 <- CNV.fit(target_all.data["264M"], normal.data, anno_TCGA19)
+mar_264_TCGA19 <- CNV.bin(mar_264_TCGA19)
+mar_264_TCGA19 <- CNV.detail(mar_264_TCGA19)
+mar_264_TCGA19 <- CNV.segment(mar_264_TCGA19)
+
+core_264_TCGA19 <- CNV.fit(target_all.data["264C"], normal.data, anno_TCGA19)
+core_264_TCGA19 <- CNV.bin(core_264_TCGA19)
+core_264_TCGA19 <- CNV.detail(core_264_TCGA19)
+core_264_TCGA19 <- CNV.segment(core_264_TCGA19)
+
+plasma_264_TCGA19 <- CNV.fit(target_all.data["264A"], normal.data, anno_TCGA19)
+plasma_264_TCGA19 <- CNV.bin(plasma_264_TCGA19)
+plasma_264_TCGA19 <- CNV.detail(plasma_264_TCGA19)
+plasma_264_TCGA19 <- CNV.segment(plasma_264_TCGA19)
+
+mar_276_TCGA19 <- CNV.fit(target_all.data["276M"], normal.data, anno_TCGA19)
+mar_276_TCGA19 <- CNV.bin(mar_276_TCGA19)
+mar_276_TCGA19 <- CNV.detail(mar_276_TCGA19)
+mar_276_TCGA19 <- CNV.segment(mar_276_TCGA19)
+
+core_276_TCGA19 <- CNV.fit(target_all.data["276C"], normal.data, anno_TCGA19)
+core_276_TCGA19 <- CNV.bin(core_276_TCGA19)
+core_276_TCGA19 <- CNV.detail(core_276_TCGA19)
+core_276_TCGA19 <- CNV.segment(core_276_TCGA19)
+
+plasma_276_TCGA19 <- CNV.fit(target_all.data["276A"], normal.data, anno_TCGA19)
+plasma_276_TCGA19 <- CNV.bin(plasma_276_TCGA19)
+plasma_276_TCGA19 <- CNV.detail(plasma_276_TCGA19)
+plasma_276_TCGA19 <- CNV.segment(plasma_276_TCGA19)
+
+mar_288_TCGA19 <- CNV.fit(target_all.data["288M"], normal.data, anno_TCGA19)
+mar_288_TCGA19 <- CNV.bin(mar_288_TCGA19)
+mar_288_TCGA19 <- CNV.detail(mar_288_TCGA19)
+mar_288_TCGA19 <- CNV.segment(mar_288_TCGA19)
+
+core_288_TCGA19 <- CNV.fit(target_all.data["288C"], normal.data, anno_TCGA19)
+core_288_TCGA19 <- CNV.bin(core_288_TCGA19)
+core_288_TCGA19 <- CNV.detail(core_288_TCGA19)
+core_288_TCGA19 <- CNV.segment(core_288_TCGA19)
+
+plasma_288_TCGA19 <- CNV.fit(target_all.data["288A"], normal.data, anno_TCGA19)
+plasma_288_TCGA19 <- CNV.bin(plasma_288_TCGA19)
+plasma_288_TCGA19 <- CNV.detail(plasma_288_TCGA19)
+plasma_288_TCGA19 <- CNV.segment(plasma_288_TCGA19)
+
+mar_124_TCGA19 <- CNV.fit(target_all.data["124M"], normal.data, anno_TCGA19)
+mar_124_TCGA19 <- CNV.bin(mar_124_TCGA19)
+mar_124_TCGA19 <- CNV.detail(mar_124_TCGA19)
+mar_124_TCGA19 <- CNV.segment(mar_124_TCGA19)
+
+core_124_TCGA19 <- CNV.fit(target_all.data["124C"], normal.data, anno_TCGA19)
+core_124_TCGA19 <- CNV.bin(core_124_TCGA19)
+core_124_TCGA19 <- CNV.detail(core_124_TCGA19)
+core_124_TCGA19 <- CNV.segment(core_124_TCGA19)
+
+plasma_124_TCGA19 <- CNV.fit(target_all.data["124A"], normal.data, anno_TCGA19)
+plasma_124_TCGA19 <- CNV.bin(plasma_124_TCGA19)
+plasma_124_TCGA19 <- CNV.detail(plasma_124_TCGA19)
+plasma_124_TCGA19 <- CNV.segment(plasma_124_TCGA19)
+
+mar_207_TCGA19 <- CNV.fit(target_all.data["207M"], normal.data, anno_TCGA19)
+mar_207_TCGA19 <- CNV.bin(mar_207_TCGA19)
+mar_207_TCGA19 <- CNV.detail(mar_207_TCGA19)
+mar_207_TCGA19 <- CNV.segment(mar_207_TCGA19)
+
+core_207_TCGA19 <- CNV.fit(target_all.data["207C"], normal.data, anno_TCGA19)
+core_207_TCGA19 <- CNV.bin(core_207_TCGA19)
+core_207_TCGA19 <- CNV.detail(core_207_TCGA19)
+core_207_TCGA19 <- CNV.segment(core_207_TCGA19)
+
+plasma_207_TCGA19 <- CNV.fit(target_all.data["207A"], normal.data, anno_TCGA19)
+plasma_207_TCGA19 <- CNV.bin(plasma_207_TCGA19)
+plasma_207_TCGA19 <- CNV.detail(plasma_207_TCGA19)
+plasma_207_TCGA19 <- CNV.segment(plasma_207_TCGA19)
+
+mar_166_TCGA19 <- CNV.fit(target_all.data["166M"], normal.data, anno_TCGA19)
+mar_166_TCGA19 <- CNV.bin(mar_166_TCGA19)
+mar_166_TCGA19 <- CNV.detail(mar_166_TCGA19)
+mar_166_TCGA19 <- CNV.segment(mar_166_TCGA19)
+
+core_166_TCGA19 <- CNV.fit(target_all.data["166C"], normal.data, anno_TCGA19)
+core_166_TCGA19 <- CNV.bin(core_166_TCGA19)
+core_166_TCGA19 <- CNV.detail(core_166_TCGA19)
+core_166_TCGA19 <- CNV.segment(core_166_TCGA19)
+
+plasma_166_TCGA19 <- CNV.fit(target_all.data["166A"], normal.data, anno_TCGA19)
+plasma_166_TCGA19 <- CNV.bin(plasma_166_TCGA19)
+plasma_166_TCGA19 <- CNV.detail(plasma_166_TCGA19)
+plasma_166_TCGA19 <- CNV.segment(plasma_166_TCGA19)
+
+plasma_268_TCGA19 <- CNV.fit(target_all.data["268A"], normal.data, anno_TCGA19)
+plasma_268_TCGA19 <- CNV.bin(plasma_268_TCGA19)
+plasma_268_TCGA19 <- CNV.detail(plasma_268_TCGA19)
+plasma_268_TCGA19 <- CNV.segment(plasma_268_TCGA19)
+
+core_268_TCGA19 <- CNV.fit(target_all.data["268C"], normal.data, anno_TCGA19)
+core_268_TCGA19 <- CNV.bin(core_268_TCGA19)
+core_268_TCGA19 <- CNV.detail(core_268_TCGA19)
+core_268_TCGA19 <- CNV.segment(core_268_TCGA19)
+
+generate_TCGA19_conumee <- function(data) {
+CNV.detailplot_wrap(data)
+}
+
+pdf("~/Desktop/Latest Figures/TCGA_GenomePLot_detailplotwrap.pdf", height = 10, width=20)
+par(mfrow=c(5,4))
+CNV_TCGA_list<-c(mar_107_TCGA19,core_107_TCGA19,plasma_107_TCGA19,plasmaB_107_TCGA19,plasmaR_107_TCGA19,mar_199_TCGA19,core_199_TCGA19,plasma_199_TCGA19,plasmaB_199_TCGA19,mar_264_TCGA19,core_264_TCGA19,plasma_264_TCGA19,mar_276_TCGA19,core_276_TCGA19,plasma_276_TCGA19,mar_288_TCGA19,core_288_TCGA19,plasma_288_TCGA19,core_268_TCGA19,plasma_268_TCGA19,mar_124_TCGA19,core_124_TCGA19,plasma_124_TCGA19,mar_207_TCGA19,core_207_TCGA19,plasma_207_TCGA19,mar_166_TCGA19,core_166_TCGA19,plasma_166_TCGA19)
+lapply(CNV_TCGA_list,generate_TCGA19_conumee)
+dev.off()
+
+pdf("~/Desktop/Latest Figures/TCGA_GenomePLot_genomeplot.pdf", height = 10, width=20)
+par(mfrow=c(5,4))
+logratio<-function(x){
+  df<-cbind(x@detail$ratio)
+}
+CNV_TCGA_list<-c(mar_107_TCGA19,core_107_TCGA19,plasma_107_TCGA19,plasmaB_107_TCGA19,plasmaR_107_TCGA19,mar_199_TCGA19,core_199_TCGA19,plasma_199_TCGA19,plasmaB_199_TCGA19,mar_264_TCGA19,core_264_TCGA19,plasma_264_TCGA19,mar_276_TCGA19,core_276_TCGA19,plasma_276_TCGA19,mar_288_TCGA19,core_288_TCGA19,plasma_288_TCGA19,core_268_TCGA19,plasma_268_TCGA19,mar_124_TCGA19,core_124_TCGA19,plasma_124_TCGA19,mar_207_TCGA19,core_207_TCGA19,plasma_207_TCGA19,mar_166_TCGA19,core_166_TCGA19,plasma_166_TCGA19)
+lapply(CNV_TCGA_list,logratio)
+dev.off()
+
+```
+
+```{r}
+#Retrieving the CNV scores post CNV plot generation from 20 DMR region
+cnv_val_df_DMR<-as.data.frame(mar_107@detail$ratio)
+cnv_val_df_DMR[,2]<-2^(cnv_val_df_DMR[,1])
+colnames(cnv_val_df_DMR)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_df_DMR, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_mar107.csv", row.names = TRUE)
+
+cnv_val_c_107<-as.data.frame(core_107@detail$ratio)
+cnv_val_c_107[,2]<-2^(cnv_val_c_107[,1])
+colnames(cnv_val_c_107)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_c_107, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_core107.csv", row.names = TRUE)
+
+cnv_val_p_107<-as.data.frame(plasma_107@detail$ratio)
+cnv_val_p_107[,2]<-2^(cnv_val_p_107[,1])
+colnames(cnv_val_p_107)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_p_107, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_plasma107.csv", row.names = TRUE)
+
+cnv_val_pB_107<-as.data.frame(plasmaB_107@detail$ratio)
+cnv_val_pB_107[,2]<-2^(cnv_val_pB_107[,1])
+colnames(cnv_val_pB_107)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_pB_107, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_plasmaB107.csv", row.names = TRUE)
+
+cnv_val_pR_107<-as.data.frame(plasmaR_107@detail$ratio)
+cnv_val_pR_107[,2]<-2^(cnv_val_pR_107[,1])
+colnames(cnv_val_pR_107)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_pR_107, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_plasmaR107.csv", row.names = TRUE)
+
+cnv_val_m_199<-as.data.frame(mar_199@detail$ratio)
+cnv_val_m_199[,2]<-2^(cnv_val_m_199[,1])
+colnames(cnv_val_m_199)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_m_199, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_mar199.csv", row.names = TRUE)
+
+cnv_val_c_199<-as.data.frame(core_199@detail$ratio)
+cnv_val_c_199[,2]<-2^(cnv_val_c_199[,1])
+colnames(cnv_val_c_199)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_c_199, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_core199.csv", row.names = TRUE)
+
+cnv_val_p_199<-as.data.frame(plasma_199@detail$ratio)
+cnv_val_p_199[,2]<-2^(cnv_val_p_199[,1])
+colnames(cnv_val_p_199)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_p_199, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_plasma199.csv", row.names = TRUE)
+
+cnv_val_pB_199<-as.data.frame(plasmaB_199@detail$ratio)
+cnv_val_pB_199[,2]<-2^(cnv_val_pB_199[,1])
+colnames(cnv_val_pB_199)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_pB_199, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_plasmaB199.csv", row.names = TRUE)
+
+cnv_val_m_264<-as.data.frame(mar_264@detail$ratio)
+cnv_val_m_264[,2]<-2^(cnv_val_m_264[,1])
+colnames(cnv_val_m_264)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_m_264, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_mar264.csv", row.names = TRUE)
+
+cnv_val_c_264<-as.data.frame(core_264@detail$ratio)
+cnv_val_c_264[,2]<-2^(cnv_val_c_264[,1])
+colnames(cnv_val_c_264)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_c_264, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_core264.csv", row.names = TRUE)
+
+cnv_val_p_264<-as.data.frame(plasma_264@detail$ratio)
+cnv_val_p_264[,2]<-2^(cnv_val_p_264[,1])
+colnames(cnv_val_p_264)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_p_264, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_plasma264.csv", row.names = TRUE)
+
+cnv_val_m_276<-as.data.frame(mar_276@detail$ratio)
+cnv_val_m_276[,2]<-2^(cnv_val_m_276[,1])
+colnames(cnv_val_m_276)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_m_276, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_mar276.csv", row.names = TRUE)
+
+cnv_val_c_276<-as.data.frame(core_276@detail$ratio)
+cnv_val_c_276[,2]<-2^(cnv_val_c_276[,1])
+colnames(cnv_val_c_276)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_c_276, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_core276.csv", row.names = TRUE)
+
+cnv_val_p_276<-as.data.frame(plasma_276@detail$ratio)
+cnv_val_p_276[,2]<-2^(cnv_val_p_276[,1])
+colnames(cnv_val_p_276)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_p_276, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_plasma276.csv", row.names = TRUE)
+
+
+cnv_val_m_288<-as.data.frame(mar_288@detail$ratio)
+cnv_val_m_288[,2]<-2^(cnv_val_m_288[,1])
+colnames(cnv_val_m_288)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_m_288, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_mar288.csv", row.names = TRUE)
+
+cnv_val_c_288<-as.data.frame(core_288@detail$ratio)
+cnv_val_c_288[,2]<-2^(cnv_val_c_288[,1])
+colnames(cnv_val_c_288)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_c_288, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_core288.csv", row.names = TRUE)
+
+cnv_val_p_288<-as.data.frame(plasma_288@detail$ratio)
+cnv_val_p_288[,2]<-2^(cnv_val_p_288[,1])
+colnames(cnv_val_p_288)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_p_288, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_plasma288.csv", row.names = TRUE)
+
+cnv_val_c_268<-as.data.frame(core_268@detail$ratio)
+cnv_val_c_268[,2]<-2^(cnv_val_c_268[,1])
+colnames(cnv_val_c_268)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_c_268, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_core288.csv", row.names = TRUE)
+
+cnv_val_p_268<-as.data.frame(plasma_268@detail$ratio)
+cnv_val_p_268[,2]<-2^(cnv_val_p_268[,1])
+colnames(cnv_val_p_268)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_p_268, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_plasma288.csv", row.names = TRUE)
+
+cnv_val_m_124<-as.data.frame(mar_124@detail$ratio)
+cnv_val_m_124[,2]<-2^(cnv_val_m_124[,1])
+colnames(cnv_val_m_124)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_m_124, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_mar124.csv", row.names = TRUE)
+
+cnv_val_c_124<-as.data.frame(core_124@detail$ratio)
+cnv_val_c_124[,2]<-2^(cnv_val_c_124[,1])
+colnames(cnv_val_c_124)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_c_124, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_core124.csv", row.names = TRUE)
+
+cnv_val_p_124<-as.data.frame(plasma_124@detail$ratio)
+cnv_val_p_124[,2]<-2^(cnv_val_p_124[,1])
+colnames(cnv_val_p_124)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_p_124, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_plasma124.csv", row.names = TRUE)
+
+cnv_val_m_207<-as.data.frame(mar_207@detail$ratio)
+cnv_val_m_207[,2]<-2^(cnv_val_m_207[,1])
+colnames(cnv_val_m_207)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_m_207, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_mar207.csv", row.names = TRUE)
+
+cnv_val_c_207<-as.data.frame(core_207@detail$ratio)
+cnv_val_c_207[,2]<-2^(cnv_val_c_207[,1])
+colnames(cnv_val_c_207)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_c_207, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_core207.csv", row.names = TRUE)
+
+cnv_val_p_207<-as.data.frame(plasma_207@detail$ratio)
+cnv_val_p_207[,2]<-2^(cnv_val_p_207[,1])
+colnames(cnv_val_p_207)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_p_207, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_plasma207.csv", row.names = TRUE)
+
+cnv_val_m_166<-as.data.frame(mar_166@detail$ratio)
+cnv_val_m_166[,2]<-2^(cnv_val_m_166[,1])
+colnames(cnv_val_m_166)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_m_166, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_mar166.csv", row.names = TRUE)
+
+cnv_val_c_166<-as.data.frame(core_166@detail$ratio)
+cnv_val_c_166[,2]<-2^(cnv_val_c_166[,1])
+colnames(cnv_val_c_166)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_c_166, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_core166.csv", row.names = TRUE)
+
+cnv_val_p_166<-as.data.frame(plasma_166@detail$ratio)
+cnv_val_p_166[,2]<-2^(cnv_val_p_166[,1])
+colnames(cnv_val_p_166)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_p_166, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_plasma166.csv", row.names = TRUE)
+
+```
+
+```{r}
+#Retrieving the CNV scores post CNV plot generation from 19 TCGA Genes
+cnv_val_df_DMR_TCGA19<-as.data.frame(mar_107_TCGA19@detail$ratio)
+cnv_val_df_DMR_TCGA19[,2]<-2^(cnv_val_df_DMR_TCGA19[,1])
+colnames(cnv_val_df_DMR_TCGA19)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_df_DMR_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_mar107_TCGA19.csv", row.names = TRUE)
+
+cnv_val_c_107_TCGA19<-as.data.frame(core_107_TCGA19@detail$ratio)
+cnv_val_c_107_TCGA19[,2]<-2^(cnv_val_c_107_TCGA19[,1])
+colnames(cnv_val_c_107_TCGA19)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_c_107_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_core107_TCGA19.csv", row.names = TRUE)
+
+cnv_val_p_107_TCGA19<-as.data.frame(plasma_107_TCGA19@detail$ratio)
+cnv_val_p_107_TCGA19[,2]<-2^(cnv_val_p_107_TCGA19[,1])
+colnames(cnv_val_p_107_TCGA19)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_p_107_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_plasma107_TCGA19.csv", row.names = TRUE)
+
+cnv_val_pB_107_TCGA19<-as.data.frame(plasmaB_107_TCGA19@detail$ratio)
+cnv_val_pB_107_TCGA19[,2]<-2^(cnv_val_pB_107_TCGA19[,1])
+colnames(cnv_val_pB_107_TCGA19)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_pB_107_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_plasmaB107_TCGA19.csv", row.names = TRUE)
+
+cnv_val_pR_107_TCGA19<-as.data.frame(plasmaR_107_TCGA19@detail$ratio)
+cnv_val_pR_107_TCGA19[,2]<-2^(cnv_val_pR_107_TCGA19[,1])
+colnames(cnv_val_pR_107_TCGA19)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_pR_107_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_plasmaR107_TCGA19.csv", row.names = TRUE)
+
+cnv_val_m_199_TCGA19<-as.data.frame(mar_199_TCGA19@detail$ratio)
+cnv_val_m_199_TCGA19[,2]<-2^(cnv_val_m_199_TCGA19[,1])
+colnames(cnv_val_m_199_TCGA19)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_m_199_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_mar199_TCGA19.csv", row.names = TRUE)
+
+cnv_val_c_199_TCGA19<-as.data.frame(core_199_TCGA19@detail$ratio)
+cnv_val_c_199_TCGA19[,2]<-2^(cnv_val_c_199_TCGA19[,1])
+colnames(cnv_val_c_199_TCGA19)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_c_199_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_core199_TCGA19.csv", row.names = TRUE)
+
+cnv_val_p_199_TCGA19<-as.data.frame(plasma_199_TCGA19@detail$ratio)
+cnv_val_p_199_TCGA19[,2]<-2^(cnv_val_p_199_TCGA19[,1])
+colnames(cnv_val_p_199_TCGA19)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_p_199_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_plasma199_TCGA19.csv", row.names = TRUE)
+
+cnv_val_pB_199_TCGA19<-as.data.frame(plasmaB_199_TCGA19@detail$ratio)
+cnv_val_pB_199_TCGA19[,2]<-2^(cnv_val_pB_199_TCGA19[,1])
+colnames(cnv_val_pB_199_TCGA19)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_pB_199_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_plasmaB199_TCGA19.csv", row.names = TRUE)
+
+cnv_val_m_264_TCGA19<-as.data.frame(mar_264_TCGA19@detail$ratio)
+cnv_val_m_264_TCGA19[,2]<-2^(cnv_val_m_264_TCGA19[,1])
+colnames(cnv_val_m_264_TCGA19)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_m_264_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_mar264_TCGA19.csv", row.names = TRUE)
+
+cnv_val_c_264_TCGA19<-as.data.frame(core_264_TCGA19@detail$ratio)
+cnv_val_c_264_TCGA19[,2]<-2^(cnv_val_c_264_TCGA19[,1])
+colnames(cnv_val_c_264_TCGA19)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_c_264_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_core264_TCGA19.csv", row.names = TRUE)
+
+cnv_val_p_264_TCGA19<-as.data.frame(plasma_264_TCGA19@detail$ratio)
+cnv_val_p_264_TCGA19[,2]<-2^(cnv_val_p_264_TCGA19[,1])
+colnames(cnv_val_p_264_TCGA19)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_p_264_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_plasma264_TCGA19.csv", row.names = TRUE)
+
+cnv_val_m_276_TCGA19<-as.data.frame(core_276_TCGA19@detail$ratio)
+cnv_val_m_276_TCGA19[,2]<-2^(cnv_val_m_276_TCGA19[,1])
+colnames(cnv_val_m_276_TCGA19)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_m_276_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_mar276_TCGA19.csv", row.names = TRUE)
+
+cnv_val_c_276_TCGA19<-as.data.frame(mar_276_TCGA19@detail$ratio)
+cnv_val_c_276_TCGA19[,2]<-2^(cnv_val_c_276_TCGA19[,1])
+colnames(cnv_val_c_276_TCGA19)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_c_276_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_core276_TCGA19.csv", row.names = TRUE)
+
+cnv_val_p_276_TCGA19<-as.data.frame(plasma_276_TCGA19@detail$ratio)
+cnv_val_p_276_TCGA19[,2]<-2^(cnv_val_p_276_TCGA19[,1])
+colnames(cnv_val_p_276_TCGA19)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_p_276_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_plasma276_TCGA19.csv", row.names = TRUE)
+
+
+cnv_val_m_288_TCGA19<-as.data.frame(mar_288_TCGA19@detail$ratio)
+cnv_val_m_288_TCGA19[,2]<-2^(cnv_val_m_288_TCGA19[,1])
+colnames(cnv_val_m_288_TCGA19)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_m_288_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_mar288_TCGA19.csv", row.names = TRUE)
+
+cnv_val_c_288_TCGA19<-as.data.frame(core_288_TCGA19@detail$ratio)
+cnv_val_c_288_TCGA19[,2]<-2^(cnv_val_c_288_TCGA19[,1])
+colnames(cnv_val_c_288_TCGA19)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_c_288_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_core288_TCGA19.csv", row.names = TRUE)
+
+cnv_val_p_288_TCGA19<-as.data.frame(plasma_288_TCGA19@detail$ratio)
+cnv_val_p_288_TCGA19[,2]<-2^(cnv_val_p_288_TCGA19[,1])
+colnames(cnv_val_p_288_TCGA19)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_p_288_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_plasma288_TCGA19.csv", row.names = TRUE)
+
+cnv_val_c_268_TCGA19<-as.data.frame(core_268_TCGA19@detail$ratio)
+cnv_val_c_268_TCGA19[,2]<-2^(cnv_val_c_268_TCGA19[,1])
+colnames(cnv_val_c_268_TCGA19)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_c_268_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_core288_TCGA19.csv", row.names = TRUE)
+
+cnv_val_p_268_TCGA19<-as.data.frame(plasma_268_TCGA19@detail$ratio)
+cnv_val_p_268_TCGA19[,2]<-2^(cnv_val_p_268_TCGA19[,1])
+colnames(cnv_val_p_268_TCGA19)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_p_268_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_plasma288_TCGA19.csv", row.names = TRUE)
+
+cnv_val_m_124_TCGA19<-as.data.frame(mar_124_TCGA19@detail$ratio)
+cnv_val_m_124_TCGA19[,2]<-2^(cnv_val_m_124_TCGA19[,1])
+colnames(cnv_val_m_124_TCGA19)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_m_124_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_mar124_TCGA19.csv", row.names = TRUE)
+
+cnv_val_c_124_TCGA19<-as.data.frame(core_124_TCGA19@detail$ratio)
+cnv_val_c_124_TCGA19[,2]<-2^(cnv_val_c_124_TCGA19[,1])
+colnames(cnv_val_c_124_TCGA19)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_c_124_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_core124_TCGA19.csv", row.names = TRUE)
+
+cnv_val_p_124_TCGA19<-as.data.frame(plasma_124_TCGA19@detail$ratio)
+cnv_val_p_124_TCGA19[,2]<-2^(cnv_val_p_124_TCGA19[,1])
+colnames(cnv_val_p_124_TCGA19)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_p_124_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_plasma124_TCGA19.csv", row.names = TRUE)
+
+cnv_val_m_207_TCGA19<-as.data.frame(mar_207_TCGA19@detail$ratio)
+cnv_val_m_207_TCGA19[,2]<-2^(cnv_val_m_207_TCGA19[,1])
+colnames(cnv_val_m_207_TCGA19)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_m_207_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_mar207_TCGA19.csv", row.names = TRUE)
+
+cnv_val_c_207_TCGA19<-as.data.frame(core_207_TCGA19@detail$ratio)
+cnv_val_c_207_TCGA19[,2]<-2^(cnv_val_c_207_TCGA19[,1])
+colnames(cnv_val_c_207_TCGA19)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_c_207_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_core207_TCGA19.csv", row.names = TRUE)
+
+cnv_val_p_207_TCGA19<-as.data.frame(plasma_207_TCGA19@detail$ratio)
+cnv_val_p_207_TCGA19[,2]<-2^(cnv_val_p_207_TCGA19[,1])
+colnames(cnv_val_p_207_TCGA19)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_p_207_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_plasma207_TCGA19.csv", row.names = TRUE)
+
+cnv_val_m_166_TCGA19<-as.data.frame(mar_166_TCGA19@detail$ratio)
+cnv_val_m_166_TCGA19[,2]<-2^(cnv_val_m_166_TCGA19[,1])
+colnames(cnv_val_m_166_TCGA19)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_m_166_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_mar166_TCGA19.csv", row.names = TRUE)
+
+cnv_val_c_166_TCGA19<-as.data.frame(core_166_TCGA19@detail$ratio)
+cnv_val_c_166_TCGA19[,2]<-2^(cnv_val_c_166_TCGA19[,1])
+colnames(cnv_val_c_166_TCGA19)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_c_166_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_core166_TCGA19.csv", row.names = TRUE)
+
+cnv_val_p_166_TCGA19<-as.data.frame(plasma_166_TCGA19@detail$ratio)
+cnv_val_p_166_TCGA19[,2]<-2^(cnv_val_p_166_TCGA19[,1])
+colnames(cnv_val_p_166_TCGA19)<-c("Log_Value","CNV_value")
+write.csv(cnv_val_p_166_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_plasma166_TCGA19.csv", row.names = TRUE)
+```
+
