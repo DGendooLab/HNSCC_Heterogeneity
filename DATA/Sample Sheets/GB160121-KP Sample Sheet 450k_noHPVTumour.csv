@@ -1,0 +1,19 @@
+[Header],,,,,,
+Investigator Name,Cwhalley,,,,,
+Project Name,GB160121-KP-450k,,,,,
+Experiment Name,Methylation 450K,,, ,,
+Date,04/12/22,,,,,
+[Manifests],,,,,,
+A,HumanMethylation450_15017482_v.1.2.bpm,,,,,
+[Data],,,,,,
+Sample_Name,Sample_Well,Sample_Recurrence,Sample_Group,Sample_HPV,Sentrix_ID,Sentrix_Position
+107M,C03,,Margin,,200053740092,R01C02
+107C,D03,,Core,,200053740092,R02C02
+199M,A01,,Margin,,200053740023,R01C01
+264M,D01,,Margin,,200053740023,R04C01
+276M,F01,,Margin,,200053740023,R06C01
+288M,H01,,Margin,,200053740023,R02C02
+199C,G01,,Core,,200053740051,R01C02
+264C,A02,,Core,,200053740051,R03C02
+276C,C02,,Core,,200053740051,R05C02
+288C,D02,,Core,,200053740051,R06C02

@@ -1,0 +1,39 @@
+[Header],,,,,,
+Investigator Name,Cwhalley,,,,,
+Project Name,GB160121-KP-450k,,,,,
+Experiment Name,Methylation 450K,,, ,,
+Date,04/12/22,,,,,
+[Manifests],,,,,,
+A,HumanMethylation450_15017482_v.1.2.bpm,,,,,
+[Data],,,,,,
+Sample_Name,Sample_Well,Sample_Plate,Sample_Group,Pool_ID,Sentrix_ID,Sentrix_Position
+199M - margin,A01,,Margin,,200053740023,R01C01
+199N - normal,B01,,Normal,,200053740023,R02C01
+264M - margin,D01,,Margin,,200053740023,R04C01
+264N - normal,E01,,Normal,,200053740023,R05C01
+276M - margin,F01,,Margin,,200053740023,R06C01
+276N - normal,G01,,Normal,,200053740023,R01C02
+288M - margin,H01,,Margin,,200053740023,R02C02
+107A - plasma DNA,A02,,Plasma_DNA,,200053740023,R03C02
+107B - plasma DNA,B02,,Plasma_DNA_6weeks,,200053740023,R04C02
+107R - plasma DNA,C02,,Plasma_DNA_Recurrance,,200053740023,R05C02
+199B - plasma DNA,E02,,Plasma_DNA_6weeks,,200053740092,R01C01
+124A - plasma DNA,F02,,Plasma_DNA,,200053740092,R02C01
+124M - margin,G02,,Margin,,200053740092,R03C01
+124N - normal,H02,,Normal,,200053740092,R04C01
+124C - core,A03,,Core,,200053740092,R05C01
+107N - normal,B03,,Normal,,200053740092,R06C01
+107M - margin,C03,,Margin,,200053740092,R01C02
+107C - core,D03,,Core,,200053740092,R02C02
+288N - normal,E03,,Normal,,200053740092,R03C02
+107C - core,D03,,Core,,200053740092,R02C02
+199A - plasma DNA,A01,,Plasma_DNA,,200053740051,R01C01
+264A - plasma DNA,C01,,Plasma_DNA,,200053740051,R03C01
+276A - plasma DNA,E01,,Plasma_DNA,,200053740051,R05C01
+288A - plasma DNA,F01,,Plasma_DNA,,200053740051,R06C01
+199C - core,G01,,Core,,200053740051,R01C02
+264C - core,A02,,Core,,200053740051,R03C02
+276C - core,C02,,Core,,200053740051,R05C02
+288C - core,D02,,Core,,200053740051,R06C02
+
+

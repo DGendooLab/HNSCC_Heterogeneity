@@ -1,0 +1,16 @@
+[Header],,,,,,
+Investigator Name,Cwhalley,,,,,
+Project Name,GB160121-KP-450k,,,,,
+Experiment Name,Methylation 450K,,, ,,
+Date,04/12/22,,,,,
+[Manifests],,,,,,
+A,HumanMethylation450_15017482_v.1.2.bpm,,,,,
+[Data],,,,,,
+Sample_Name,Sample_Well,Sample_Plate,Sample_Group,Pool_ID,Sentrix_ID,Sentrix_Position
+199N,B01,R,Normal,HPVN,200053740023,R02C01
+124N,H02,NR,Normal,HPVP,200053740092,R04C01
+264N,E01,R,Normal,HPVN,200053740023,R05C01
+107N,B03,R,Normal,HPVN,200053740092,R06C01
+276N,G01,NR,Normal,HPVN,200053740023,R01C02
+288N,E03,NR,Normal,HPVN,200053740092,R03C02
+166N,H03,NR,Normal,HPVP,200053740092,R06C02
