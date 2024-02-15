@@ -3,7 +3,7 @@ Set Seed and load the data directory where the file is saved
 
 set.seed(2023)
 # set up a path to the data directory
-dataDirectory <- "~/Downloads/idat files 19/Thesis-idat"
+dataDirectory <- "~/DATA"
 # list the files
 list.files(dataDirectory, recursive = TRUE)
 ```
@@ -37,10 +37,10 @@ Annotation data for the Illumina Human Methylation 450k BeadChip, which is a mic
 ann450k <- getAnnotation(IlluminaHumanMethylation450kanno.ilmn12.hg19)
 head(ann450k)
 ```
-Reading in the Sample sheet which has paramters regarding the samples like Sample Number, sample subtype etc.
+Reading in the Sample sheet which has parameters regarding the samples like Sample Number, sample subtype etc.
 ```{r}
 # read in the sample sheet for the experiment
-targets<- read.metharray.sheet(dataDirectory, pattern="GB160121-KP Sample Sheet 450k_alltissues copy 2.csv") 
+targets<- read.metharray.sheet("~/DATA/Sample Sheets", pattern="GB160121-KP Sample Sheet 450k_alltissues copy 2.csv") 
 ```
 
 Read and load DNA methylation data from an Illumina methylation array experiment called rgSet. The function read.metharray.exp() takes the targets file as input and processes it to extract the necessary information and load the methylation data into rgSet.
@@ -1255,9 +1255,9 @@ heatmap_res_107
 Tumour and non tumour, hpv and non HPV diagrame
 ```{r}
 # read in the sample sheet for the experiment
-targets_all_tum <- read.metharray.sheet(dataDirectory, pattern="GB160121-KP Sample Sheet 450k_alltissuesTUMOUR.csv") 
-targets_nonHPV_tum<- read.metharray.sheet(dataDirectory, pattern="GB160121-KP Sample Sheet 450k_noHPVTumour.csv") 
-targets_plasma<- read.metharray.sheet(dataDirectory, pattern="GB160121-KP Sample Sheet 450k_plasma.csv") 
+targets_all_tum <- read.metharray.sheet("~/DATA/Sample Sheets", pattern="GB160121-KP Sample Sheet 450k_alltissuesTUMOUR.csv") 
+targets_nonHPV_tum<- read.metharray.sheet("~/DATA/Sample Sheets", pattern="GB160121-KP Sample Sheet 450k_noHPVTumour.csv") 
+targets_plasma<- read.metharray.sheet("~/DATA/Sample Sheets", pattern="GB160121-KP Sample Sheet 450k_plasma.csv") 
 ```
 
 Read and load DNA methylation data from an Illumina methylation array experiment called rgSet. The function read.metharray.exp() takes the targets file as input and processes it to extract the necessary information and load the methylation data into rgSet.
