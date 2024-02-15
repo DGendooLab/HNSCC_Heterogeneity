@@ -2,7 +2,7 @@ Set Seed and load the data directory where the file is saved
 ```{r}
 set.seed(2023)
 # set up a path to the data directory
-dataDirectory <- "~/Downloads/idat files 19/Thesis-idat"
+dataDirectory <- "~/DATA"
 # list the files
 list.files(dataDirectory, recursive = TRUE)
 ```
@@ -40,7 +40,7 @@ head(ann450k)
 Reading in the Sample sheet which has paramters regarding the samples like Sample Number, sample subtype etc.
 ```{r}
 # read in the sample sheet for the experiment
-targets <- read.metharray.sheet(dataDirectory, pattern="GB160121-KP Sample Sheet 450k_noHPV.csv")
+targets <- read.metharray.sheet("~/DATA/Sample Sheets", pattern="GB160121-KP Sample Sheet 450k_noHPV.csv")
 ```
 
 Read and load DNA methylation data from an Illumina methylation array experiment called rgSet. The function read.metharray.exp() takes the targets file as input and processes it to extract the necessary information and load the methylation data into rgSet.
