@@ -7,7 +7,7 @@ Set Seed and load the data directory where the file is saved
 
 set.seed(2023)
 # set up a path to the data directory
-dataDirectory <- "~/Downloads/idat files 19/Thesis-idat"
+dataDirectory <- "~/DATA"
 # list the files
 list.files(dataDirectory, recursive = TRUE)
 ```
@@ -45,7 +45,7 @@ head(ann450k_hpvana)
 Reading in the Sample sheet which has paramters regarding the samples like Sample Number, sample subtype etc. The sample sheet contains all tumour samples available in the cohort
 ```{r}
 # read in the sample sheet for the experiment
-targets_hpvana <- read.metharray.sheet(dataDirectory, pattern="GB160121-KP Sample Sheet 450k_alltissuesTUMOUR.csv")
+targets_hpvana <- read.metharray.sheet("~/DATA/Sample Sheets", pattern="GB160121-KP Sample Sheet 450k_alltissuesTUMOUR.csv")
 ```
 
 Read and load DNA methylation data from an Illumina methylation array experiment called rgSet. The function read.metharray.exp() takes the targets file as input and processes it to extract the necessary information and load the methylation data into rgSet.
@@ -78,13 +78,13 @@ rgSet_hpvana <- rgSet_hpvana[,keep_hpvana]
 rgSet_hpvana
 ```
 
-Updating the smaple sheet to have only those samples that satisfy the treshold (p<0.05)
+Updating the sample sheet to have only those samples that satisfy the threshold (p<0.05)
 ```{r}
 # remove poor quality samples from targets data
 targets_hpvana <- targets_hpvana[keep_hpvana,]
 targets_hpvana[,1:5]
 ```
-Filter out detection p values table for only those that are present in the sample sheet (i.e only those that have satisfied the treshold of p<0.05)
+Filter out detection p values table for only those that are present in the sample sheet (i.e only those that have satisfied the threshold of p<0.05)
 ```{r}
 # remove poor quality samples from detection p-value table
 detP_hpvana <- detP_hpvana[,keep_hpvana]
@@ -94,7 +94,7 @@ dim(detP_hpvana)
 
 Normlaise the data using Fucntional Normalisation
 ```{r}
-# normalize the data; this results in a GenomicRatioSet object
+# normalise the data; this results in a GenomicRatioSet object
 mSetSq_hpvana <- preprocessFunnorm(rgSet_hpvana) 
 mSetSq_hpvana
 ```
@@ -331,7 +331,7 @@ top_20_pathways_hpvana<-topGSA(gst.region.kegg_hpvana, n=10)
 top_20_pathways_hpvana
 ```
 ```{r}
-pdf("~/Desktop/HPVNvsHPVP_DMRanalysis.pdf")
+pdf("~/HPVNvsHPVP_DMRanalysis.pdf")
 DMR_Df<-as.data.frame(results.ranges_hpvana)
 print(DMR_Df)
 dev.off()
