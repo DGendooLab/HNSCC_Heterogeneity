@@ -1,0 +1,339 @@
+This RMD file conatins code to analyse the differential methylation in the tumour samples of HPV and Non HPV patients in the cohort
+
+
+
+Set Seed and load the data directory where the file is saved
+```{r}
+
+set.seed(2023)
+# set up a path to the data directory
+dataDirectory <- "~/Downloads/idat files 19/Thesis-idat"
+# list the files
+list.files(dataDirectory, recursive = TRUE)
+```
+Load library of packages that are required
+```{r}
+library(knitr)
+library(limma)
+library(minfi)
+library(IlluminaHumanMethylation450kanno.ilmn12.hg19)
+library(IlluminaHumanMethylation450kmanifest)
+library(RColorBrewer)
+library(missMethyl)
+library(minfiData)
+library(Gviz)
+library(DMRcate)
+library(stringr)
+library(GenomicFeatures)
+library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+library(maxprobes)
+library(GenomicRanges)
+library(ggplot2)
+library(missMethyl)
+library(heatmaply)
+library(RColorBrewer)
+library(conumee)
+```
+
+Annotation data for the Illumina Human Methylation 450k BeadChip, which is a microarray platform commonly used for DNA methylation analysis. The annotation data typically includes information about the genomic locations, gene names, and other relevant details associated with the probes on the BeadChip.
+
+```{r}
+# get the 450k annotation data
+ann450k_hpvana <- getAnnotation(IlluminaHumanMethylation450kanno.ilmn12.hg19)
+head(ann450k_hpvana)
+```
+Reading in the Sample sheet which has paramters regarding the samples like Sample Number, sample subtype etc. The sample sheet contains all tumour samples available in the cohort
+```{r}
+# read in the sample sheet for the experiment
+targets_hpvana <- read.metharray.sheet(dataDirectory, pattern="GB160121-KP Sample Sheet 450k_alltissuesTUMOUR.csv")
+```
+
+Read and load DNA methylation data from an Illumina methylation array experiment called rgSet. The function read.metharray.exp() takes the targets file as input and processes it to extract the necessary information and load the methylation data into rgSet.
+```{r}
+# read in the raw data from the IDAT files
+rgSet_hpvana <- read.metharray.exp(targets=targets_hpvana)
+rgSet_hpvana
+
+```
+Giving descriptive names to the samples
+```{r}
+# give the samples descriptive names
+targets_hpvana$ID <- paste(targets_hpvana$Sample_Name,targets$Sample_Recurrence,sep=".")
+sampleNames(rgSet_hpvana) <- targets_hpvana$ID
+rgSet_hpvana
+```
+
+Calculating detection p values: It is idicative of quality of signal. If the p values are small, then it is indicative of reliable signal. If the p values are larger than 0.01 then it indicates poor quality of signal
+```{r}
+# calculate the detection p-values
+detP_hpvana <- detectionP(rgSet_hpvana)
+head(detP_hpvana)
+```
+
+Filtering out poor quality samples and keeping samples that have detection p <0.05
+```{r}
+# remove poor quality samples
+keep_hpvana <- colMeans(detP_hpvana) < 0.05
+rgSet_hpvana <- rgSet_hpvana[,keep_hpvana]
+rgSet_hpvana
+```
+
+Updating the smaple sheet to have only those samples that satisfy the treshold (p<0.05)
+```{r}
+# remove poor quality samples from targets data
+targets_hpvana <- targets_hpvana[keep_hpvana,]
+targets_hpvana[,1:5]
+```
+Filter out detection p values table for only those that are present in the sample sheet (i.e only those that have satisfied the treshold of p<0.05)
+```{r}
+# remove poor quality samples from detection p-value table
+detP_hpvana <- detP_hpvana[,keep_hpvana]
+dim(detP_hpvana)
+```
+
+
+Normlaise the data using Fucntional Normalisation
+```{r}
+# normalize the data; this results in a GenomicRatioSet object
+mSetSq_hpvana <- preprocessFunnorm(rgSet_hpvana) 
+mSetSq_hpvana
+```
+
+```{r}
+# create a MethylSet object from the raw data for plotting
+mSetRaw_hpvana <- preprocessRaw(rgSet_hpvana)
+```
+
+
+PCA to see how the samples cluster based on sample recurrence
+```{r}
+# MDS plots to look at largest sources of variation
+pal <- brewer.pal(8,"Dark2")
+plotMDS(getM(mSetSq_hpvana), top=1000, gene.selection="common", cex =1,
+        col=pal[factor(targets_hpvana$Sample_Recurrence)],labels = targets_hpvana$Sample_Name)
+legend("bottomright", legend=levels(factor(targets_hpvana$Sample_Recurrence)), text.col=pal,
+       bg="white", cex=0.5)
+
+```
+
+```{r}
+# Examine higher dimensions to look at other sources of variation
+par(mfrow=c(1,3))
+plotMDS(getM(mSetSq_hpvana), top=1000, gene.selection="common", 
+        col=pal[factor(targets_hpvana$Sample_Recurrence)], dim=c(1,3))
+legend("top", legend=levels(factor(targets_hpvana$Sample_Recurrence)), text.col=pal, 
+       cex=0.7, bg="white")
+
+plotMDS(getM(mSetSq_hpvana), top=1000, gene.selection="common", 
+        col=pal[factor(targets_hpvana$Sample_Recurrence)], dim=c(2,3))
+legend("topleft", legend=levels(factor(targets_hpvana$Sample_Recurrence)), text.col=pal,
+       cex=0.7, bg="white")
+
+plotMDS(getM(mSetSq_hpvana), top=1000, gene.selection="common", 
+        col=pal[factor(targets_hpvana$Sample_Recurrence)], dim=c(3,4))
+legend("topright", legend=levels(factor(targets_hpvana$Sample_Recurrence)), text.col=pal,
+       cex=0.5, bg="white")
+
+```
+
+```{r}
+# ensure probes are in the same order in the mSetSq and detP objects
+detP_hpvana <- detP_hpvana[match(featureNames(mSetSq_hpvana),rownames(detP_hpvana)),] 
+
+# remove any probes that have failed in one or more samples
+keep_hpvana <- rowSums(detP_hpvana < 0.01) == ncol(mSetSq_hpvana) 
+table(keep_hpvana)
+```
+
+```{r}
+mSetSqFlt_hpvana <- mSetSq_hpvana[keep_hpvana,]
+mSetSqFlt_hpvana
+```
+```{r}
+# if your data includes males and females, remove probes on the sex chromosomes
+keep_hpvana <- !(featureNames(mSetSqFlt_hpvana) %in% ann450k_hpvana$Name[ann450k_hpvana$chr %in% 
+                                                        c("chrX","chrY")])
+table(keep_hpvana)
+mSetSqFlt_hpvana <- mSetSqFlt_hpvana[keep_hpvana,]
+
+
+
+# remove probes with SNPs at CpG site
+mSetSqFlt_hpvana <- dropLociWithSnps(mSetSqFlt_hpvana)
+mSetSqFlt_hpvana
+
+```
+
+Remove cross reactive probes: These are probes that bind to multiple regions in the genome and so not have unique binding sites. These are to be removed since their signal creates bias. The file containing the cross reactive probes was taken from : https://github.com/IARCbioinfo/Methylation_analysis_scripts/blob/master/48639-non-specific-probes-Illumina450k.csv
+```{r}
+# exclude cross reactive probes 
+xReactiveProbes <- read.csv(file=paste(dataDirectory,"48639-non-specific-probes-Illumina450k.csv",sep="/"), stringsAsFactors=FALSE)
+keep_hpvana <- !(featureNames(mSetSqFlt_hpvana) %in% xReactiveProbes$TargetID)
+table(keep_hpvana)
+mSetSqFlt_hpvana <- mSetSqFlt_hpvana[keep_hpvana,] 
+mSetSqFlt_hpvana
+```
+
+```{r}
+# calculate M-values for statistical analysis
+mVals_hpvana <- getM(mSetSqFlt_hpvana)
+head(mVals_hpvana[,1:5])
+```
+Calculating beta values for further analysis
+```{r}
+bVals_hpvana<- getBeta(mSetSqFlt_hpvana)
+head(bVals_hpvana[,1:5])
+
+```
+
+
+Correlation matrix for beta values
+```{r}
+corr_mtx_hpvana<-cor(bVals_hpvana ,method = "pearson")
+corr_mtx_hpvana
+library(viridis)
+heatmap_res_hpvana<-heatmaply(corr_mtx_hpvana, 
+          colors = viridis(100),
+          main = "Correlation Heatmap")
+heatmap_res_hpvana
+```
+
+---------------------------------------------- HPV-Non HPV-------------------------------------------------------------
+
+We begin with analysing the deferentially methylated probes and regions between marginal tumour tissues and normal tissues. Here it is HPV and Non HPV patients, all the results produces are wrt Margin in comparison
+
+```{r}
+# this is the factor of interest
+Recurrence_type <- factor(targets_hpvana$Sample_HPV)
+# use the above to create a design matrix
+design_hpvana <- model.matrix(~0+Recurrence_type, data=targets_hpvana)
+colnames(design_hpvana) <- levels(Recurrence_type)
+# fit the linear model 
+fit_hpvana <- lmFit(mVals_hpvana, design_hpvana)
+contMatrix_hpvana <- makeContrasts(HPVP-HPVN,
+                           levels=design_hpvana)
+contMatrix_hpvana
+```
+Correlation matrix for beta values
+
+```{r}
+# fit the contrasts
+fit2_hpvana <- contrasts.fit(fit_hpvana, contMatrix_hpvana)
+fit2_hpvana <- eBayes(fit2_hpvana)
+
+# look at the numbers of DM CpGs at FDR < 0.05
+summary(decideTests(fit2_hpvana))
+```
+
+```{r}
+# get the table of results for the first contrast (naive - rTreg)
+ann450kSub_hpvana <- ann450k_hpvana[match(rownames(mVals_hpvana),ann450k_hpvana$Name),
+                      c(1:4,12:19,24:ncol(ann450k_hpvana))]
+DMPs_hpvana <- topTable(fit_hpvana, num=Inf, coef=1, genelist=ann450kSub_hpvana)
+head(DMPs_hpvana)
+
+DMP_ord_hpv_ana<-DMPs_hpvana[order(DMPs_hpvana$t),]
+DMP_ord_hpv_ana<-subset.data.frame(DMP_ord_hpv_ana,DMP_ord_hpv_ana$P.Value<0.05)
+tail(DMP_ord_hpv_ana)
+head(DMP_ord_hpv_ana)
+DMP_probes_hpvana<-DMP_ord_hpv_ana$Name
+mvals_dmp_hpvana<-mVals_hpvana[rownames(mVals_hpvana) %in% DMP_probes_hpvana, ]
+```
+
+```{r}
+# plot the top 4 most significantly differential methylated CpGs 
+par(mfrow=c(2,2))
+sapply(rownames(DMP_ord_hpvana)[1:4], function(cpg){
+  plotCpg(bVals_hpvana, cpg=cpg, pheno=targets_hpvana$Sample_HPV, ylab = "Beta values")
+})
+dim(DMP_ord_hpvana)
+```
+
+```{r}
+#Plot the bottom 4 differentially methylated CpGs
+par(mfrow=c(2,2))
+sapply(tail(rownames(DMP_ord)), function(cpg){
+  plotCpg(bVals, cpg=cpg, pheno=targets$Sample_Group, ylab = "Beta values")
+})
+
+```
+
+```{r}
+myAnnotation_hpvana <- cpg.annotate(object = mVals_hpvana, datatype = "array", what = "M", 
+                             analysis.type = "differential", design = design_hpvana, 
+                             contrasts = TRUE, cont.matrix = contMatrix_hpvana, 
+                             coef = colnames(contMatrix_hpvana), arraytype = "450K")
+
+```
+
+```{r}
+str(myAnnotation_hpvana)
+```
+
+```{r}
+#identify differentially methylated regions
+DMRs_hpvana <- dmrcate(myAnnotation_hpvana, lambda=1000, C=2)
+results.ranges_hpvana <- extractRanges(DMRs_hpvana)
+head(results.ranges_hpvana,6)
+results.ranges_hpvana
+```
+
+```{r}
+# set up the grouping variables and colours
+groups <- pal[1:length(unique(targets_hpvana$Sample_HPV))]
+names(groups) <- levels(factor(targets_hpvana$Sample_HPV))
+cols <- groups[as.character(factor(targets_hpvana$Sample_HPV))]
+cols
+```
+
+```{r}
+# draw the plot for the top DMR
+par(mfrow=c(1,1))
+DMR.plot(ranges = results.ranges_hpvana, dmr = 2, CpGs = bVals_hpvana, phen.col = cols, 
+         what = "Beta", arraytype = "450K", genome = "hg19")
+write.csv(results.ranges_hpvana, "hpvp-hpvn_DMR.csv", row.names = FALSE)
+```
+Visualizing the distribution of DMR across chromosomes and the distribution of length of the ranges
+```{r}
+range_DMR_hpvana<-ranges(results.ranges_hpvana)
+range_DMR_hpvana<-data.frame(range_DMR_hpvana)
+ggplot(range_DMR_hpvana, aes(x=width)) + geom_histogram(color="darkblue", fill="lightblue",binwidth =100)
+
+chr_names_hpvana<-table(seqnames(results.ranges_hpvana))
+dmr_chr_countdf_hpvana<-data.frame(chromosome=names(chr_names_hpvana),count=as.numeric(chr_names_hpvana))
+ggplot(dmr_chr_countdf_hpvana, aes(x=chromosome,y=count)) + geom_bar(stat="identity",fill="red",width=0.5 )+labs(x = "Chromosome", y = "DMR Count", title = "DMR Counts per Chromosome")+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+```{r}
+DMP_Data_hpvana<-data.frame(Probe.ID<-DMRs_hpvana$Name, Chromosome=DMRs_hpvana$chr, Position=DMRs_hpvana$pos, p_value=DMRs_hpvana$P.Value)
+DMR_Data_hpvana<-data.frame(DMR_ID=range_DMR_hpvana)
+```
+
+
+GSEA
+```{r}
+
+library(missMethyl)
+gst.region_hpvana <- goregion(results.ranges_hpvana, all.cpg=rownames(mVals_hpvana), 
+                       collection="GO", array.type="450K", plot.bias=TRUE,sig.genes = TRUE)
+
+```
+
+```{r}
+topGSA(gst.region_hpvana, n=10)
+```
+
+```{r}
+gst.region.kegg_hpvana <- goregion(results.ranges_hpvana, all.cpg=rownames(mVals_hpvana), 
+                       collection="KEGG", array.type="450K",sig.genes = TRUE)
+
+top_20_pathways_hpvana<-topGSA(gst.region.kegg_hpvana, n=10)
+top_20_pathways_hpvana
+```
+```{r}
+pdf("~/Desktop/HPVNvsHPVP_DMRanalysis.pdf")
+DMR_Df<-as.data.frame(results.ranges_hpvana)
+print(DMR_Df)
+dev.off()
+```
+
