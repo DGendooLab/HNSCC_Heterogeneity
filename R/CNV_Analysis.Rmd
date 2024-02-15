@@ -62,9 +62,9 @@ library("minfiData")
 ```
 
 
-The following code is to annotate the data with known methylted regions
+The following code is to annotate the data with known methylated regions
 ```{r}
-#Data from DMR  analysis in Thesis_HNSCC RMD. Creating a dataframe with teh overlapping 279 regions and corresponding details.
+#Data from DMR  analysis in Thesis_HNSCC RMD. Creating a data frame with the overlapping 279 regions and corresponding details.
 data(exclude_regions)
 data(detail_regions)
 head(detail_region_DMR_all, n = 2)
@@ -120,20 +120,20 @@ genomeplot<-function(obj){
   CNV.genomeplot(obj)
 }
 
-pdf("~/Desktop/Latest Figures/20_DMR_genes_GenomePLot.pdf",height = 10, width=20)
+#pdf("~/20_DMR_genes_GenomePLot.pdf",height = 10, width=20)
 CNV_DMR_list<-c(mar_107,core_107,plasma_107_TC19,plasmaB_107,plasmaR_107,mar_199 ,core_199 ,plasma_199 ,plasmaB_199 ,mar_264 ,core_264 ,plasma_264 ,mar_276 ,core_276 ,plasma_276 ,mar_288 ,core_288 ,plasma_288 )
 lapply(CNV_DMR_list,genomeplot)
-dev.off()
+#dev.off()
 
-pdf("~/Desktop/Latest Figures/268_20_DMR_genes_GenomePLot.pdf")
+#pdf("~/268_20_DMR_genes_GenomePLot.pdf")
 CNV.genomeplot(core_268)
 CNV.genomeplot(plasma_268)
-dev.off()
+#dev.off()
  
-pdf("~/Desktop/Latest Figures/268_19_TCGAgenes_GenomePLot.pdf")
+#pdf("~/268_19_TCGAgenes_GenomePLot.pdf")
 CNV.genomeplot(core_268_TC19)
 CNV.genomeplot(plasma_268_TC19)
-dev.off()
+#dev.off()
 
 
 ```
@@ -164,99 +164,99 @@ CNV.detailplot(data,name="PTEN"))
 
 #19TCGA gene specific plots for 
 
-pdf("~/Desktop/Latest Figures/tcga19_genome_107_mar.pdf")
+#pdf("~/tcga19_genome_107_mar.pdf")
 par( mfrow= c(6,3))
 lapply(c(mar_107_TC19), generate_conumee_plot)
-dev.off()
+#dev.off()
 
-pdf("~/Desktop/Latest Figures/tcga19_genome_107_core.pdf")
+#pdf("~/tcga19_genome_107_core.pdf")
 par( mfrow= c(6,3))
 lapply(c(core_107_TC19), generate_conumee_plot)
-dev.off()
+#dev.off()
 
-pdf("~/Desktop/Latest Figures/tcga19_genome_107_plamsa.pdf")
+#pdf("~/tcga19_genome_107_plamsa.pdf")
 par( mfrow= c(6,3))
 lapply(c(plasma_107_TC19), generate_conumee_plot)
-dev.off()
+#dev.off()
 
-pdf("~/Desktop/Latest Figures/tcga19_genome_107_plasmaB.pdf")
-par( mfrow= c(6,3))
-lapply(c(plasmaB_107_TC19), generate_conumee_plot)
-dev.off()
+#pdf("~/tcga19_genome_107_plasmaB.pdf")
+#par( mfrow= c(6,3))
+#lapply(c(plasmaB_107_TC19), generate_conumee_plot)
+#dev.off()
 
-pdf("~/Desktop/Latest Figures/tcga19_genome_107_plasmaR.pdf")
-par( mfrow= c(6,3))
-lapply(c(plasmaR_107_TC19), generate_conumee_plot)
-dev.off()
+#pdf("~/tcga19_genome_107_plasmaR.pdf")
+#par( mfrow= c(6,3))
+#lapply(c(plasmaR_107_TC19), generate_conumee_plot)
+#dev.off()
 
-pdf("~/Desktop/Latest Figures/tcga19_genome_199_mar.pdf")
-par( mfrow= c(6,3))
-lapply(c(mar_199_TC19), generate_conumee_plot)
-dev.off()
+#pdf("~/tcga19_genome_199_mar.pdf")
+#par( mfrow= c(6,3))
+#lapply(c(mar_199_TC19), generate_conumee_plot)
+#dev.off()
 
-pdf("~/Desktop/Latest Figures/tcga19_genome_199_core.pdf")
-par( mfrow= c(6,3))
-lapply(c(core_199_TC19), generate_conumee_plot)
-dev.off()
+#pdf("~/tcga19_genome_199_core.pdf")
+#par( mfrow= c(6,3))
+#lapply(c(core_199_TC19), generate_conumee_plot)
+#dev.off()
 
-pdf("~/Desktop/Latest Figures/tcga19_genome_199_plasma.pdf")
-par( mfrow= c(6,3))
-lapply(c(plasma_199_TC19), generate_conumee_plot)
-dev.off()
+#pdf("~/tcga19_genome_199_plasma.pdf")
+#par( mfrow= c(6,3))
+#lapply(c(plasma_199_TC19), generate_conumee_plot)
+#dev.off()
 
-pdf("~/Desktop/Latest Figures/tcga19_genome_199_plasmaB.pdf")
+pdf("~/tcga19_genome_199_plasmaB.pdf")
 par( mfrow= c(6,3))
 lapply(c(plasmaB_199_TC19), generate_conumee_plot)
 dev.off()
 
-pdf("~/Desktop/Latest Figures/tcga19_genome_264_mar.pdf")
+pdf("~/tcga19_genome_264_mar.pdf")
 par( mfrow= c(6,3))
 lapply(c(mar_264_TC19), generate_conumee_plot)
 dev.off()
 
-pdf("~/Desktop/Latest Figures/tcga19_genome_264_core.pdf")
+pdf("~/tcga19_genome_264_core.pdf")
 par( mfrow= c(6,3))
 lapply(c(core_264_TC19), generate_conumee_plot)
 dev.off()
 
-pdf("~/Desktop/Latest Figures/tcga19_genome_264_plasma.pdf")
+pdf("~/tcga19_genome_264_plasma.pdf")
 par( mfrow= c(6,3))
 lapply(c(plasma_264_TC19), generate_conumee_plot)
 dev.off()
 
-pdf("~/Desktop/Latest Figures/tcga19_genome_276_mar.pdf")
+pdf("~/tcga19_genome_276_mar.pdf")
 par( mfrow= c(6,3))
 lapply(c(mar_276_TC19), generate_conumee_plot)
 dev.off()
 
-pdf("~/Desktop/Latest Figures/tcga19_genome_276_core.pdf")
+pdf("~/tcga19_genome_276_core.pdf")
 par( mfrow= c(6,3))
 lapply(c(core_276_TC19), generate_conumee_plot)
 dev.off()
 
-pdf("~/Desktop/Latest Figures/tcga19_genome_276_plasma.pdf")
+pdf("~/tcga19_genome_276_plasma.pdf")
 par( mfrow= c(6,3))
 lapply(c(plasma_276_TC19), generate_conumee_plot)
 dev.off()
 
-pdf("~/Desktop/Latest Figures/tcga19_genome_288_mar.pdf")
+pdf("~/tcga19_genome_288_mar.pdf")
 par( mfrow= c(6,3))
 lapply(c(mar_288_TC19), generate_conumee_plot)
 dev.off()
 
-pdf("~/Desktop/Latest Figures/tcga19_genome_288_core.pdf")
+pdf("~/tcga19_genome_288_core.pdf")
 par( mfrow= c(6,3))
 lapply(c(core_288_TC19), generate_conumee_plot)
 dev.off()
 
-pdf("~/Desktop/Latest Figures/tcga19_genome_288_plasma.pdf")
+pdf("~/tcga19_genome_288_plasma.pdf")
 par( mfrow= c(6,3))
 lapply(c(plasma_288_TC19), generate_conumee_plot)
 dev.off()
 
 
 #TCGA Genome Plot
-pdf("~/Desktop/Latest Figures/TCGA_GenomePlot/TCGA_GenomePLot.pdf", height = 10, width=20)
+pdf("~/TCGA_GenomePLot.pdf", height = 10, width=20)
 par(mfrow=c(5,4))
 CNV_TCGA_list<-c(mar_107_TC19,core_107_TC19,plasma_107_TC19,plasmaB_107_TC19,plasmaR_107_TC19,mar_199_TC19,core_199_TC19,plasma_199_TC19,plasmaB_199_TC19,mar_264_TC19,core_264_TC19,plasma_264_TC19,mar_276_TC19,core_276_TC19,plasma_276_TC19,mar_288_TC19,core_288_TC19,plasma_288_TC19)
 lapply(CNV_TCGA_list,genomeplot)
@@ -267,7 +267,7 @@ generate_TCGA_19 <- function(data) {
 CNV.detailplot_wrap(data)
 }
 
-pdf("~/Desktop/Latest Figures/TCGA_GenomePLot.pdf", height = 10, width=20)
+pdf("~/TCGA_GenomePLot.pdf", height = 10, width=20)
 par(mfrow=c(5,4))
 CNV_TCGA_list<-c(mar_107_TC19,core_107_TC19,plasma_107_TC19,plasmaB_107_TC19,plasmaR_107_TC19,mar_199_TC19,core_199_TC19,plasma_199_TC19,plasmaB_199_TC19,mar_264_TC19,core_264_TC19,plasma_264_TC19,mar_276_TC19,core_276_TC19,plasma_276_TC19,mar_288_TC19,core_288_TC19,plasma_288_TC19,core_268_TC19,plasma_268_TC19)
 lapply(CNV_TCGA_list,generate_TCGA_19)
@@ -427,13 +427,13 @@ generate_DMR_conumee <- function(data) {
 CNV.detailplot_wrap(data)
 }
 
-pdf("~/Desktop/Latest Figures/DMR_GenomePLot_detailplotwrap.pdf", height = 10, width=20)
+pdf("~/DMR_GenomePLot_detailplotwrap.pdf", height = 10, width=20)
 par(mfrow=c(5,4))
 CNV_TCGA_list<-c(mar_107,core_107,plasma_107,plasmaB_107,plasmaR_107,mar_199,core_199,plasma_199,plasmaB_199,mar_264,core_264,plasma_264,mar_276,core_276,plasma_276,mar_288,core_288,plasma_288,core_268,plasma_268,mar_124,core_124,plasma_124,mar_207,core_207,plasma_207,mar_166,core_166,plasma_166)
 lapply(CNV_TCGA_list,generate_DMR_conumee)
 dev.off()
 
-pdf("~/Desktop/Latest Figures/DMR_GenomePLot_genomeplot.pdf", height = 10, width=20)
+pdf("~/DMR_GenomePLot_genomeplot.pdf", height = 10, width=20)
 par(mfrow=c(5,4))
 CNV_list<-c(mar_107,core_107,plasma_107,plasmaB_107,plasmaR_107,mar_199,core_199,plasma_199,plasmaB_199,mar_264,core_264,plasma_264,mar_276,core_276,plasma_276,mar_288,core_288,plasma_288,core_268,plasma_268,mar_124,core_124,plasma_124,mar_207,core_207,plasma_207,mar_166,core_166,plasma_166)
 lapply(CNV_TCGA_list,genomeplot)
@@ -592,13 +592,13 @@ generate_TCGA19_conumee <- function(data) {
 CNV.detailplot_wrap(data)
 }
 
-pdf("~/Desktop/Latest Figures/TCGA_GenomePLot_detailplotwrap.pdf", height = 10, width=20)
+pdf("~/TCGA_GenomePLot_detailplotwrap.pdf", height = 10, width=20)
 par(mfrow=c(5,4))
 CNV_TCGA_list<-c(mar_107_TCGA19,core_107_TCGA19,plasma_107_TCGA19,plasmaB_107_TCGA19,plasmaR_107_TCGA19,mar_199_TCGA19,core_199_TCGA19,plasma_199_TCGA19,plasmaB_199_TCGA19,mar_264_TCGA19,core_264_TCGA19,plasma_264_TCGA19,mar_276_TCGA19,core_276_TCGA19,plasma_276_TCGA19,mar_288_TCGA19,core_288_TCGA19,plasma_288_TCGA19,core_268_TCGA19,plasma_268_TCGA19,mar_124_TCGA19,core_124_TCGA19,plasma_124_TCGA19,mar_207_TCGA19,core_207_TCGA19,plasma_207_TCGA19,mar_166_TCGA19,core_166_TCGA19,plasma_166_TCGA19)
 lapply(CNV_TCGA_list,generate_TCGA19_conumee)
 dev.off()
 
-pdf("~/Desktop/Latest Figures/TCGA_GenomePLot_genomeplot.pdf", height = 10, width=20)
+pdf("~/TCGA_GenomePLot_genomeplot.pdf", height = 10, width=20)
 par(mfrow=c(5,4))
 logratio<-function(x){
   df<-cbind(x@detail$ratio)
@@ -614,148 +614,148 @@ dev.off()
 cnv_val_df_DMR<-as.data.frame(mar_107@detail$ratio)
 cnv_val_df_DMR[,2]<-2^(cnv_val_df_DMR[,1])
 colnames(cnv_val_df_DMR)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_df_DMR, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_mar107.csv", row.names = TRUE)
+write.csv(cnv_val_df_DMR, file = "~/DMR/CNV_DMR_mar107.csv", row.names = TRUE)
 
 cnv_val_c_107<-as.data.frame(core_107@detail$ratio)
 cnv_val_c_107[,2]<-2^(cnv_val_c_107[,1])
 colnames(cnv_val_c_107)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_c_107, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_core107.csv", row.names = TRUE)
+write.csv(cnv_val_c_107, file = "~/DMR/CNV_DMR_core107.csv", row.names = TRUE)
 
 cnv_val_p_107<-as.data.frame(plasma_107@detail$ratio)
 cnv_val_p_107[,2]<-2^(cnv_val_p_107[,1])
 colnames(cnv_val_p_107)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_p_107, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_plasma107.csv", row.names = TRUE)
+write.csv(cnv_val_p_107, file = "~/DMR/CNV_DMR_plasma107.csv", row.names = TRUE)
 
 cnv_val_pB_107<-as.data.frame(plasmaB_107@detail$ratio)
 cnv_val_pB_107[,2]<-2^(cnv_val_pB_107[,1])
 colnames(cnv_val_pB_107)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_pB_107, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_plasmaB107.csv", row.names = TRUE)
+write.csv(cnv_val_pB_107, file = "~/DMR/CNV_DMR_plasmaB107.csv", row.names = TRUE)
 
 cnv_val_pR_107<-as.data.frame(plasmaR_107@detail$ratio)
 cnv_val_pR_107[,2]<-2^(cnv_val_pR_107[,1])
 colnames(cnv_val_pR_107)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_pR_107, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_plasmaR107.csv", row.names = TRUE)
+write.csv(cnv_val_pR_107, file = "~/DMR/CNV_DMR_plasmaR107.csv", row.names = TRUE)
 
 cnv_val_m_199<-as.data.frame(mar_199@detail$ratio)
 cnv_val_m_199[,2]<-2^(cnv_val_m_199[,1])
 colnames(cnv_val_m_199)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_m_199, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_mar199.csv", row.names = TRUE)
+write.csv(cnv_val_m_199, file = "~/DMR/CNV_DMR_mar199.csv", row.names = TRUE)
 
 cnv_val_c_199<-as.data.frame(core_199@detail$ratio)
 cnv_val_c_199[,2]<-2^(cnv_val_c_199[,1])
 colnames(cnv_val_c_199)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_c_199, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_core199.csv", row.names = TRUE)
+write.csv(cnv_val_c_199, file = "~/DMR/CNV_DMR_core199.csv", row.names = TRUE)
 
 cnv_val_p_199<-as.data.frame(plasma_199@detail$ratio)
 cnv_val_p_199[,2]<-2^(cnv_val_p_199[,1])
 colnames(cnv_val_p_199)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_p_199, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_plasma199.csv", row.names = TRUE)
+write.csv(cnv_val_p_199, file = "~/DMR/CNV_DMR_plasma199.csv", row.names = TRUE)
 
 cnv_val_pB_199<-as.data.frame(plasmaB_199@detail$ratio)
 cnv_val_pB_199[,2]<-2^(cnv_val_pB_199[,1])
 colnames(cnv_val_pB_199)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_pB_199, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_plasmaB199.csv", row.names = TRUE)
+write.csv(cnv_val_pB_199, file = "~/DMR/CNV_DMR_plasmaB199.csv", row.names = TRUE)
 
 cnv_val_m_264<-as.data.frame(mar_264@detail$ratio)
 cnv_val_m_264[,2]<-2^(cnv_val_m_264[,1])
 colnames(cnv_val_m_264)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_m_264, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_mar264.csv", row.names = TRUE)
+write.csv(cnv_val_m_264, file = "~/DMR/CNV_DMR_mar264.csv", row.names = TRUE)
 
 cnv_val_c_264<-as.data.frame(core_264@detail$ratio)
 cnv_val_c_264[,2]<-2^(cnv_val_c_264[,1])
 colnames(cnv_val_c_264)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_c_264, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_core264.csv", row.names = TRUE)
+write.csv(cnv_val_c_264, file = "~/DMR/CNV_DMR_core264.csv", row.names = TRUE)
 
 cnv_val_p_264<-as.data.frame(plasma_264@detail$ratio)
 cnv_val_p_264[,2]<-2^(cnv_val_p_264[,1])
 colnames(cnv_val_p_264)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_p_264, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_plasma264.csv", row.names = TRUE)
+write.csv(cnv_val_p_264, file = "~/DMR/CNV_DMR_plasma264.csv", row.names = TRUE)
 
 cnv_val_m_276<-as.data.frame(mar_276@detail$ratio)
 cnv_val_m_276[,2]<-2^(cnv_val_m_276[,1])
 colnames(cnv_val_m_276)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_m_276, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_mar276.csv", row.names = TRUE)
+write.csv(cnv_val_m_276, file = "~/DMR/CNV_DMR_mar276.csv", row.names = TRUE)
 
 cnv_val_c_276<-as.data.frame(core_276@detail$ratio)
 cnv_val_c_276[,2]<-2^(cnv_val_c_276[,1])
 colnames(cnv_val_c_276)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_c_276, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_core276.csv", row.names = TRUE)
+write.csv(cnv_val_c_276, file = "~/DMR/CNV_DMR_core276.csv", row.names = TRUE)
 
 cnv_val_p_276<-as.data.frame(plasma_276@detail$ratio)
 cnv_val_p_276[,2]<-2^(cnv_val_p_276[,1])
 colnames(cnv_val_p_276)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_p_276, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_plasma276.csv", row.names = TRUE)
+write.csv(cnv_val_p_276, file = "~/DMR/CNV_DMR_plasma276.csv", row.names = TRUE)
 
 
 cnv_val_m_288<-as.data.frame(mar_288@detail$ratio)
 cnv_val_m_288[,2]<-2^(cnv_val_m_288[,1])
 colnames(cnv_val_m_288)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_m_288, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_mar288.csv", row.names = TRUE)
+write.csv(cnv_val_m_288, file = "~/DMR/CNV_DMR_mar288.csv", row.names = TRUE)
 
 cnv_val_c_288<-as.data.frame(core_288@detail$ratio)
 cnv_val_c_288[,2]<-2^(cnv_val_c_288[,1])
 colnames(cnv_val_c_288)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_c_288, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_core288.csv", row.names = TRUE)
+write.csv(cnv_val_c_288, file = "~/DMR/CNV_DMR_core288.csv", row.names = TRUE)
 
 cnv_val_p_288<-as.data.frame(plasma_288@detail$ratio)
 cnv_val_p_288[,2]<-2^(cnv_val_p_288[,1])
 colnames(cnv_val_p_288)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_p_288, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_plasma288.csv", row.names = TRUE)
+write.csv(cnv_val_p_288, file = "~/DMR/CNV_DMR_plasma288.csv", row.names = TRUE)
 
 cnv_val_c_268<-as.data.frame(core_268@detail$ratio)
 cnv_val_c_268[,2]<-2^(cnv_val_c_268[,1])
 colnames(cnv_val_c_268)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_c_268, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_core288.csv", row.names = TRUE)
+write.csv(cnv_val_c_268, file = "~/DMR/CNV_DMR_core288.csv", row.names = TRUE)
 
 cnv_val_p_268<-as.data.frame(plasma_268@detail$ratio)
 cnv_val_p_268[,2]<-2^(cnv_val_p_268[,1])
 colnames(cnv_val_p_268)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_p_268, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_plasma288.csv", row.names = TRUE)
+write.csv(cnv_val_p_268, file = "~/DMR/CNV_DMR_plasma288.csv", row.names = TRUE)
 
 cnv_val_m_124<-as.data.frame(mar_124@detail$ratio)
 cnv_val_m_124[,2]<-2^(cnv_val_m_124[,1])
 colnames(cnv_val_m_124)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_m_124, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_mar124.csv", row.names = TRUE)
+write.csv(cnv_val_m_124, file = "~/DMR/CNV_DMR_mar124.csv", row.names = TRUE)
 
 cnv_val_c_124<-as.data.frame(core_124@detail$ratio)
 cnv_val_c_124[,2]<-2^(cnv_val_c_124[,1])
 colnames(cnv_val_c_124)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_c_124, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_core124.csv", row.names = TRUE)
+write.csv(cnv_val_c_124, file = "~/DMR/CNV_DMR_core124.csv", row.names = TRUE)
 
 cnv_val_p_124<-as.data.frame(plasma_124@detail$ratio)
 cnv_val_p_124[,2]<-2^(cnv_val_p_124[,1])
 colnames(cnv_val_p_124)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_p_124, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_plasma124.csv", row.names = TRUE)
+write.csv(cnv_val_p_124, file = "~/DMR/CNV_DMR_plasma124.csv", row.names = TRUE)
 
 cnv_val_m_207<-as.data.frame(mar_207@detail$ratio)
 cnv_val_m_207[,2]<-2^(cnv_val_m_207[,1])
 colnames(cnv_val_m_207)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_m_207, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_mar207.csv", row.names = TRUE)
+write.csv(cnv_val_m_207, file = "~/DMR/CNV_DMR_mar207.csv", row.names = TRUE)
 
 cnv_val_c_207<-as.data.frame(core_207@detail$ratio)
 cnv_val_c_207[,2]<-2^(cnv_val_c_207[,1])
 colnames(cnv_val_c_207)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_c_207, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_core207.csv", row.names = TRUE)
+write.csv(cnv_val_c_207, file = "~/DMR/CNV_DMR_core207.csv", row.names = TRUE)
 
 cnv_val_p_207<-as.data.frame(plasma_207@detail$ratio)
 cnv_val_p_207[,2]<-2^(cnv_val_p_207[,1])
 colnames(cnv_val_p_207)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_p_207, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_plasma207.csv", row.names = TRUE)
+write.csv(cnv_val_p_207, file = "~/DMR/CNV_DMR_plasma207.csv", row.names = TRUE)
 
 cnv_val_m_166<-as.data.frame(mar_166@detail$ratio)
 cnv_val_m_166[,2]<-2^(cnv_val_m_166[,1])
 colnames(cnv_val_m_166)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_m_166, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_mar166.csv", row.names = TRUE)
+write.csv(cnv_val_m_166, file = "~/DMR/CNV_DMR_mar166.csv", row.names = TRUE)
 
 cnv_val_c_166<-as.data.frame(core_166@detail$ratio)
 cnv_val_c_166[,2]<-2^(cnv_val_c_166[,1])
 colnames(cnv_val_c_166)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_c_166, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_core166.csv", row.names = TRUE)
+write.csv(cnv_val_c_166, file = "~/DMR/CNV_DMR_core166.csv", row.names = TRUE)
 
 cnv_val_p_166<-as.data.frame(plasma_166@detail$ratio)
 cnv_val_p_166[,2]<-2^(cnv_val_p_166[,1])
 colnames(cnv_val_p_166)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_p_166, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_plasma166.csv", row.names = TRUE)
+write.csv(cnv_val_p_166, file = "~/DMR/CNV_DMR_plasma166.csv", row.names = TRUE)
 
 ```
 
@@ -764,147 +764,147 @@ write.csv(cnv_val_p_166, file = "~/Desktop/CNV_Values/DMR/CNV_DMR_plasma166.csv"
 cnv_val_df_DMR_TCGA19<-as.data.frame(mar_107_TCGA19@detail$ratio)
 cnv_val_df_DMR_TCGA19[,2]<-2^(cnv_val_df_DMR_TCGA19[,1])
 colnames(cnv_val_df_DMR_TCGA19)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_df_DMR_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_mar107_TCGA19.csv", row.names = TRUE)
+write.csv(cnv_val_df_DMR_TCGA19, file = "~/TCGA19/CNV_mar107_TCGA19.csv", row.names = TRUE)
 
 cnv_val_c_107_TCGA19<-as.data.frame(core_107_TCGA19@detail$ratio)
 cnv_val_c_107_TCGA19[,2]<-2^(cnv_val_c_107_TCGA19[,1])
 colnames(cnv_val_c_107_TCGA19)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_c_107_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_core107_TCGA19.csv", row.names = TRUE)
+write.csv(cnv_val_c_107_TCGA19, file = "~/TCGA19/CNV_core107_TCGA19.csv", row.names = TRUE)
 
 cnv_val_p_107_TCGA19<-as.data.frame(plasma_107_TCGA19@detail$ratio)
 cnv_val_p_107_TCGA19[,2]<-2^(cnv_val_p_107_TCGA19[,1])
 colnames(cnv_val_p_107_TCGA19)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_p_107_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_plasma107_TCGA19.csv", row.names = TRUE)
+write.csv(cnv_val_p_107_TCGA19, file = "~/TCGA19/CNV_plasma107_TCGA19.csv", row.names = TRUE)
 
 cnv_val_pB_107_TCGA19<-as.data.frame(plasmaB_107_TCGA19@detail$ratio)
 cnv_val_pB_107_TCGA19[,2]<-2^(cnv_val_pB_107_TCGA19[,1])
 colnames(cnv_val_pB_107_TCGA19)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_pB_107_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_plasmaB107_TCGA19.csv", row.names = TRUE)
+write.csv(cnv_val_pB_107_TCGA19, file = "~/TCGA19/CNV_plasmaB107_TCGA19.csv", row.names = TRUE)
 
 cnv_val_pR_107_TCGA19<-as.data.frame(plasmaR_107_TCGA19@detail$ratio)
 cnv_val_pR_107_TCGA19[,2]<-2^(cnv_val_pR_107_TCGA19[,1])
 colnames(cnv_val_pR_107_TCGA19)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_pR_107_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_plasmaR107_TCGA19.csv", row.names = TRUE)
+write.csv(cnv_val_pR_107_TCGA19, file = "~/TCGA19/CNV_plasmaR107_TCGA19.csv", row.names = TRUE)
 
 cnv_val_m_199_TCGA19<-as.data.frame(mar_199_TCGA19@detail$ratio)
 cnv_val_m_199_TCGA19[,2]<-2^(cnv_val_m_199_TCGA19[,1])
 colnames(cnv_val_m_199_TCGA19)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_m_199_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_mar199_TCGA19.csv", row.names = TRUE)
+write.csv(cnv_val_m_199_TCGA19, file = "~/TCGA19/CNV_mar199_TCGA19.csv", row.names = TRUE)
 
 cnv_val_c_199_TCGA19<-as.data.frame(core_199_TCGA19@detail$ratio)
 cnv_val_c_199_TCGA19[,2]<-2^(cnv_val_c_199_TCGA19[,1])
 colnames(cnv_val_c_199_TCGA19)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_c_199_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_core199_TCGA19.csv", row.names = TRUE)
+write.csv(cnv_val_c_199_TCGA19, file = "~/TCGA19/CNV_core199_TCGA19.csv", row.names = TRUE)
 
 cnv_val_p_199_TCGA19<-as.data.frame(plasma_199_TCGA19@detail$ratio)
 cnv_val_p_199_TCGA19[,2]<-2^(cnv_val_p_199_TCGA19[,1])
 colnames(cnv_val_p_199_TCGA19)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_p_199_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_plasma199_TCGA19.csv", row.names = TRUE)
+write.csv(cnv_val_p_199_TCGA19, file = "~/TCGA19/CNV_plasma199_TCGA19.csv", row.names = TRUE)
 
 cnv_val_pB_199_TCGA19<-as.data.frame(plasmaB_199_TCGA19@detail$ratio)
 cnv_val_pB_199_TCGA19[,2]<-2^(cnv_val_pB_199_TCGA19[,1])
 colnames(cnv_val_pB_199_TCGA19)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_pB_199_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_plasmaB199_TCGA19.csv", row.names = TRUE)
+write.csv(cnv_val_pB_199_TCGA19, file = "~/TCGA19/CNV_plasmaB199_TCGA19.csv", row.names = TRUE)
 
 cnv_val_m_264_TCGA19<-as.data.frame(mar_264_TCGA19@detail$ratio)
 cnv_val_m_264_TCGA19[,2]<-2^(cnv_val_m_264_TCGA19[,1])
 colnames(cnv_val_m_264_TCGA19)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_m_264_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_mar264_TCGA19.csv", row.names = TRUE)
+write.csv(cnv_val_m_264_TCGA19, file = "~/TCGA19/CNV_mar264_TCGA19.csv", row.names = TRUE)
 
 cnv_val_c_264_TCGA19<-as.data.frame(core_264_TCGA19@detail$ratio)
 cnv_val_c_264_TCGA19[,2]<-2^(cnv_val_c_264_TCGA19[,1])
 colnames(cnv_val_c_264_TCGA19)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_c_264_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_core264_TCGA19.csv", row.names = TRUE)
+write.csv(cnv_val_c_264_TCGA19, file = "~/TCGA19/CNV_core264_TCGA19.csv", row.names = TRUE)
 
 cnv_val_p_264_TCGA19<-as.data.frame(plasma_264_TCGA19@detail$ratio)
 cnv_val_p_264_TCGA19[,2]<-2^(cnv_val_p_264_TCGA19[,1])
 colnames(cnv_val_p_264_TCGA19)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_p_264_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_plasma264_TCGA19.csv", row.names = TRUE)
+write.csv(cnv_val_p_264_TCGA19, file = "~/TCGA19/CNV_plasma264_TCGA19.csv", row.names = TRUE)
 
 cnv_val_m_276_TCGA19<-as.data.frame(core_276_TCGA19@detail$ratio)
 cnv_val_m_276_TCGA19[,2]<-2^(cnv_val_m_276_TCGA19[,1])
 colnames(cnv_val_m_276_TCGA19)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_m_276_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_mar276_TCGA19.csv", row.names = TRUE)
+write.csv(cnv_val_m_276_TCGA19, file = "~/TCGA19/CNV_mar276_TCGA19.csv", row.names = TRUE)
 
 cnv_val_c_276_TCGA19<-as.data.frame(mar_276_TCGA19@detail$ratio)
 cnv_val_c_276_TCGA19[,2]<-2^(cnv_val_c_276_TCGA19[,1])
 colnames(cnv_val_c_276_TCGA19)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_c_276_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_core276_TCGA19.csv", row.names = TRUE)
+write.csv(cnv_val_c_276_TCGA19, file = "~/TCGA19/CNV_core276_TCGA19.csv", row.names = TRUE)
 
 cnv_val_p_276_TCGA19<-as.data.frame(plasma_276_TCGA19@detail$ratio)
 cnv_val_p_276_TCGA19[,2]<-2^(cnv_val_p_276_TCGA19[,1])
 colnames(cnv_val_p_276_TCGA19)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_p_276_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_plasma276_TCGA19.csv", row.names = TRUE)
+write.csv(cnv_val_p_276_TCGA19, file = "~/TCGA19/CNV_plasma276_TCGA19.csv", row.names = TRUE)
 
 
 cnv_val_m_288_TCGA19<-as.data.frame(mar_288_TCGA19@detail$ratio)
 cnv_val_m_288_TCGA19[,2]<-2^(cnv_val_m_288_TCGA19[,1])
 colnames(cnv_val_m_288_TCGA19)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_m_288_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_mar288_TCGA19.csv", row.names = TRUE)
+write.csv(cnv_val_m_288_TCGA19, file = "~/TCGA19/CNV_mar288_TCGA19.csv", row.names = TRUE)
 
 cnv_val_c_288_TCGA19<-as.data.frame(core_288_TCGA19@detail$ratio)
 cnv_val_c_288_TCGA19[,2]<-2^(cnv_val_c_288_TCGA19[,1])
 colnames(cnv_val_c_288_TCGA19)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_c_288_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_core288_TCGA19.csv", row.names = TRUE)
+write.csv(cnv_val_c_288_TCGA19, file = "~/TCGA19/CNV_core288_TCGA19.csv", row.names = TRUE)
 
 cnv_val_p_288_TCGA19<-as.data.frame(plasma_288_TCGA19@detail$ratio)
 cnv_val_p_288_TCGA19[,2]<-2^(cnv_val_p_288_TCGA19[,1])
 colnames(cnv_val_p_288_TCGA19)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_p_288_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_plasma288_TCGA19.csv", row.names = TRUE)
+write.csv(cnv_val_p_288_TCGA19, file = "~/TCGA19/CNV_plasma288_TCGA19.csv", row.names = TRUE)
 
 cnv_val_c_268_TCGA19<-as.data.frame(core_268_TCGA19@detail$ratio)
 cnv_val_c_268_TCGA19[,2]<-2^(cnv_val_c_268_TCGA19[,1])
 colnames(cnv_val_c_268_TCGA19)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_c_268_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_core288_TCGA19.csv", row.names = TRUE)
+write.csv(cnv_val_c_268_TCGA19, file = "~/TCGA19/CNV_core288_TCGA19.csv", row.names = TRUE)
 
 cnv_val_p_268_TCGA19<-as.data.frame(plasma_268_TCGA19@detail$ratio)
 cnv_val_p_268_TCGA19[,2]<-2^(cnv_val_p_268_TCGA19[,1])
 colnames(cnv_val_p_268_TCGA19)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_p_268_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_plasma288_TCGA19.csv", row.names = TRUE)
+write.csv(cnv_val_p_268_TCGA19, file = "~/TCGA19/CNV_plasma288_TCGA19.csv", row.names = TRUE)
 
 cnv_val_m_124_TCGA19<-as.data.frame(mar_124_TCGA19@detail$ratio)
 cnv_val_m_124_TCGA19[,2]<-2^(cnv_val_m_124_TCGA19[,1])
 colnames(cnv_val_m_124_TCGA19)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_m_124_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_mar124_TCGA19.csv", row.names = TRUE)
+write.csv(cnv_val_m_124_TCGA19, file = "~/TCGA19/CNV_mar124_TCGA19.csv", row.names = TRUE)
 
 cnv_val_c_124_TCGA19<-as.data.frame(core_124_TCGA19@detail$ratio)
 cnv_val_c_124_TCGA19[,2]<-2^(cnv_val_c_124_TCGA19[,1])
 colnames(cnv_val_c_124_TCGA19)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_c_124_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_core124_TCGA19.csv", row.names = TRUE)
+write.csv(cnv_val_c_124_TCGA19, file = "~/TCGA19/CNV_core124_TCGA19.csv", row.names = TRUE)
 
 cnv_val_p_124_TCGA19<-as.data.frame(plasma_124_TCGA19@detail$ratio)
 cnv_val_p_124_TCGA19[,2]<-2^(cnv_val_p_124_TCGA19[,1])
 colnames(cnv_val_p_124_TCGA19)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_p_124_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_plasma124_TCGA19.csv", row.names = TRUE)
+write.csv(cnv_val_p_124_TCGA19, file = "~/TCGA19/CNV_plasma124_TCGA19.csv", row.names = TRUE)
 
 cnv_val_m_207_TCGA19<-as.data.frame(mar_207_TCGA19@detail$ratio)
 cnv_val_m_207_TCGA19[,2]<-2^(cnv_val_m_207_TCGA19[,1])
 colnames(cnv_val_m_207_TCGA19)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_m_207_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_mar207_TCGA19.csv", row.names = TRUE)
+write.csv(cnv_val_m_207_TCGA19, file = "~/TCGA19/CNV_mar207_TCGA19.csv", row.names = TRUE)
 
 cnv_val_c_207_TCGA19<-as.data.frame(core_207_TCGA19@detail$ratio)
 cnv_val_c_207_TCGA19[,2]<-2^(cnv_val_c_207_TCGA19[,1])
 colnames(cnv_val_c_207_TCGA19)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_c_207_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_core207_TCGA19.csv", row.names = TRUE)
+write.csv(cnv_val_c_207_TCGA19, file = "~/TCGA19/CNV_core207_TCGA19.csv", row.names = TRUE)
 
 cnv_val_p_207_TCGA19<-as.data.frame(plasma_207_TCGA19@detail$ratio)
 cnv_val_p_207_TCGA19[,2]<-2^(cnv_val_p_207_TCGA19[,1])
 colnames(cnv_val_p_207_TCGA19)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_p_207_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_plasma207_TCGA19.csv", row.names = TRUE)
+write.csv(cnv_val_p_207_TCGA19, file = "~/TCGA19/CNV_plasma207_TCGA19.csv", row.names = TRUE)
 
 cnv_val_m_166_TCGA19<-as.data.frame(mar_166_TCGA19@detail$ratio)
 cnv_val_m_166_TCGA19[,2]<-2^(cnv_val_m_166_TCGA19[,1])
 colnames(cnv_val_m_166_TCGA19)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_m_166_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_mar166_TCGA19.csv", row.names = TRUE)
+write.csv(cnv_val_m_166_TCGA19, file = "~/TCGA19/CNV_mar166_TCGA19.csv", row.names = TRUE)
 
 cnv_val_c_166_TCGA19<-as.data.frame(core_166_TCGA19@detail$ratio)
 cnv_val_c_166_TCGA19[,2]<-2^(cnv_val_c_166_TCGA19[,1])
 colnames(cnv_val_c_166_TCGA19)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_c_166_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_core166_TCGA19.csv", row.names = TRUE)
+write.csv(cnv_val_c_166_TCGA19, file = "~/TCGA19/CNV_core166_TCGA19.csv", row.names = TRUE)
 
 cnv_val_p_166_TCGA19<-as.data.frame(plasma_166_TCGA19@detail$ratio)
 cnv_val_p_166_TCGA19[,2]<-2^(cnv_val_p_166_TCGA19[,1])
 colnames(cnv_val_p_166_TCGA19)<-c("Log_Value","CNV_value")
-write.csv(cnv_val_p_166_TCGA19, file = "~/Desktop/CNV_Values/TCGA19/CNV_plasma166_TCGA19.csv", row.names = TRUE)
+write.csv(cnv_val_p_166_TCGA19, file = "~/TCGA19/CNV_plasma166_TCGA19.csv", row.names = TRUE)
 ```
 
