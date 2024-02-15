@@ -1,16 +1,16 @@
 ```{r}
 set.seed(2023)
 # set up a path to the data directory
-dataDirectory <- "~/Downloads/idat files 19/Thesis-idat"
+dataDirectory <- "~/DATA"
 # list the files
 list.files(dataDirectory, recursive = TRUE)
 # get the 450k annotation data
 ann450k_CNV <- getAnnotation(IlluminaHumanMethylation450kanno.ilmn12.hg19)
 head(ann450k_CNV)
 # read in the sample sheet for the experiment
-targets_CNV <- read.metharray.sheet(dataDirectory, pattern="GB160121-KP Sample Sheet 450k_noHPV.csv")
-normal_CNV<-read.metharray.sheet(dataDirectory, pattern="GB160121-KP Sample Sheet 450k_normal.csv")
-target_all<-read.metharray.sheet(dataDirectory, pattern = "GB160121-KP Sample Sheet 450k_alltissues copy 2")
+targets_CNV <- read.metharray.sheet("~/DATA/Sample Sheets", pattern="GB160121-KP Sample Sheet 450k_noHPV.csv")
+normal_CNV<-read.metharray.sheet("~/DATA/Sample Sheets", pattern="GB160121-KP Sample Sheet 450k_normal.csv")
+target_all<-read.metharray.sheet("~/DATA/Sample Sheets", pattern = "GB160121-KP Sample Sheet 450k_alltissues copy 2")
 # read in the raw data from the IDAT files
 rgSet_CNV <- read.metharray.exp(targets=targets_CNV)
 rgSet_normal<-read.metharray.exp(targets=normal_CNV)
