@@ -1,0 +1,490 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r}
+# Load necessary libraries if not already loaded
+library(DMRcate)
+
+# Define your input objects
+ranges <- granges_object_3_overlap
+CpGs <- bVals
+phen_col <- cols
+
+# Define array type and genome variables
+array_type <- "450K"
+genome <- "hg19"
+
+# Initialize a list to store outputs
+output_list <- list()
+
+# Function to safely store S4 objects
+safe_store <- function(result) {
+  if (inherits(result, "try-error")) {
+    return(NULL)
+  }
+  return(result)
+}
+
+# Loop from dmr = 1 to dmr = 279
+for (dmr in 1:279) {
+  # Define the filename for the PDF
+  pdf_filename <- paste0("DMR_plot_dmr_", dmr, ".pdf")
+  
+  # Open a PDF device with specified dimensions (e.g., 8.5 by 11 inches)
+  pdf(pdf_filename, width = 8.5, height = 11)
+  
+  # Try-catch block for error handling
+  result <- tryCatch({
+    # Generate the plot and capture any output (if available)
+    plot_output <- DMR.plot(
+      ranges = ranges,
+      dmr = dmr,
+      CpGs = CpGs,
+      phen.col = phen_col,
+      what = "Beta",
+      arraytype = array_type,
+      genome = genome
+    )
+    plot_output  # Assuming DMR.plot returns some output
+  }, error = function(e) {
+    # Print the error message and return the error condition
+    message("Error in DMR.plot for dmr = ", dmr, ": ", e)
+    e
+  })
+  
+  # Store the result in the list, handling S4 objects safely
+  output_list[[dmr]] <- safe_store(result)
+  
+  # Close the PDF device
+  dev.off()
+}
+
+# Now, output_list contains the results for each DMR, with errors as NULLs
+```
+
+
+Subsetting top 20 DMR out of the 279
+```{r}
+# Load necessary libraries if not already loaded
+library(DMRcate)
+
+# Define your input objects
+ranges <- detail_region_DMR_all
+CpGs <- bVals
+phen_col <- cols
+
+# Define array type and genome variables
+array_type <- "450K"
+genome <- "hg19"
+
+# Initialize a list to store outputs
+output_list <- list()
+
+# Function to safely store S4 objects
+safe_store <- function(result) {
+  if (inherits(result, "try-error")) {
+    return(NULL)
+  }
+  return(result)
+}
+
+# Loop from dmr = 1 to dmr = 279
+for (dmr in 20) {
+  # Define the filename for the PDF
+  pdf_filename <- paste0("DMR_plot_dmr_", dmr, ".pdf")
+  
+  # Open a PDF device with specified dimensions (e.g., 8.5 by 11 inches)
+  pdf(pdf_filename, width = 8.5, height = 11)
+  
+  # Try-catch block for error handling
+  result <- tryCatch({
+    # Generate the plot and capture any output (if available)
+    plot_output <- DMR.plot(
+      ranges = ranges,
+      dmr = dmr,
+      CpGs = CpGs,
+      phen.col = phen_col,
+      what = "Beta",
+      arraytype = array_type,
+      genome = genome
+    )
+    plot_output  # Assuming DMR.plot returns some output
+  }, error = function(e) {
+    # Print the error message and return the error condition
+    message("Error in DMR.plot for dmr = ", dmr, ": ", e)
+    e
+  })
+  
+  # Store the result in the list, handling S4 objects safely
+  output_list[[dmr]] <- safe_store(result)
+  
+  # Close the PDF device
+  dev.off()
+}
+
+# Now, output_list contains the results for each DMR, with errors as NULLs
+```
+
+
+Mapping DMR and probes all 279
+```{r}
+
+#Extract all he probes and the corresponding position in genome they bind to using teh package used for annotating the IDAT files
+data(IlluminaHumanMethylation450kanno.ilmn12.hg19)
+
+#This has the exact Data frame with probe, chromosome, position and strand
+data(Locations)
+
+#Dataframe of probes and their binding location form IlluminaHumanMehtylation450k annotation package
+probe_chr<-as.data.frame(Locations)
+
+#Converting this into a Grange object
+probes_gr <- GRanges(
+  seqnames = probe_chr$chr,
+  ranges = IRanges(start = probe_chr$pos, end = probe_chr$pos),
+  strand = probe_chr$strand
+)
+
+#279 DMR
+granges_object_3_overlap
+
+#overlap probes to DMR
+# Find overlaps between the probes grange object and DMR G range object (279)
+probe_dmr_olap <- findOverlaps(probes_gr, granges_object_3_overlap)
+
+# Extract the overlaps as a dataframe
+probe_dmr_olap_df <- data.frame(
+  probe_index = queryHits(probe_dmr_olap),
+  dmr_index = subjectHits(probe_dmr_olap)
+)
+
+# Join the overlaps with the original dataframes to get the complete information
+mapped_probes <- probe_chr[probe_dmr_olap_df$probe_index, ]
+mapped_dmrs <- overlap_DMR[probe_dmr_olap_df$dmr_index, ]
+
+# Combine the mapped probes and DMRs into a single dataframe
+result_mapping <- cbind(mapped_probes, mapped_dmrs)
+
+#The next step is to extract the bvals corresponding to the probe-DMR combination. We already have a datframe bvals that was generated that has bvas for all samples corresponding to each probe. 
+
+#First step is to identify the common rows in bVals dataframe and results_mapping dataframe as both have probe names as the rowheaders
+common_rows <- intersect(rownames(result_mapping), rownames(bVals))
+
+
+#The next step is to subset the dataframe for the common rows identified. This is to be done for both the data frame having DMR-Probe mapping (result_mapping) and the dataframe that has all teh probes and corresponding bvals (bVals)
+dfallprobe_subset <- bVals[common_rows, ]
+df_dmr_probe_olap_sub<-result_mapping[common_rows, ]
+
+#The next step is to cbind both the subset dataframes to have them in a single data frame. Now we have bvals for all samples corresponding to common probes
+B_vals_279DMR<-cbind(df_dmr_probe_olap_sub,dfallprobe_subset)
+
+
+#subset the above data frame to get the numerical values for reatinga. correlation plot. df_dmr_probe_olap_sub can also be used for the same
+B_val_DMR_num<-B_vals_279DMR[,10:32]
+
+
+corr_mtx_DMR<-cor(B_val_DMR_num ,method = "pearson")
+corr_mtx_DMR
+library(viridis)
+heatmap_DMR<-heatmaply(corr_mtx_DMR, 
+          colors = viridis(100),
+          main = "Correlation Heatmap 279 DMR")
+heatmap_DMR
+
+```
+Plasma-Normal and Margin Normal Overlaps and mapping the beta values for that.
+```{r}
+
+#Probe grange object
+probes_gr
+
+#overlapping grnage object
+ct_m_n_overlap
+ct_m_n_overlap_df<-as.data.frame(ct_m_n_overlap)
+
+#overlap probes to DMR
+# Find overlaps between the probes grange object and DMR G range object (Ct-N and M-N) the 400 overlaping DMRS from the venn
+ct_m_n_dmr_olap <- findOverlaps(probes_gr, ct_m_n_overlap)
+
+# Extract the overlaps as a dataframe
+ct_m_n_dmr_olap_df <- data.frame(
+  probe_index = queryHits(ct_m_n_dmr_olap),
+  dmr_index = subjectHits(ct_m_n_dmr_olap)
+)
+
+# Join the overlaps with the original dataframes to get the complete information
+mapped_probes_ct_m_n <- probe_chr[ct_m_n_dmr_olap_df$probe_index, ]
+mapped_dmrs_ct_m_n <- ct_m_n_overlap_df[ct_m_n_dmr_olap_df$dmr_index, ]
+
+# Combine the mapped probes and DMRs into a single dataframe
+result_mapping_ct_m_n_dmr_df <- cbind(mapped_probes_ct_m_n, mapped_dmrs_ct_m_n)
+
+#The next step is to extract the bvals corresponding to the probe-DMR combination. We already have a datframe bvals that was generated that has bvas for all samples corresponding to each probe. 
+
+#First step is to identify the common rows in bVals dataframe and results_mapping dataframe as both have probe names as the rowheaders
+common_rows_ct_m_n <- intersect(rownames(result_mapping_ct_m_n_dmr_df), rownames(bVals))
+
+
+#The next step is to subset the dataframe for the common rows identified. This is to be done for both the data frame having DMR-Probe mapping (result_mapping) and the dataframe that has all teh probes and corresponding bvals (bVals)
+dfallprobe_ct_m_n_subset <- bVals[common_rows_ct_m_n, ]
+df_dmr_ct_m_n_probe_olap_sub<-result_mapping_ct_m_n_dmr_df[common_rows_ct_m_n, ]
+
+#The next step is to cbind both the subset dataframes to have them in a single data frame. Now we have bvals for all samples corresponding to common probes
+B_vals_ct_m_n_dmr<-cbind(df_dmr_ct_m_n_probe_olap_sub,dfallprobe_ct_m_n_subset)
+
+
+#subset the above data frame to get the numerical values for reatinga. correlation plot. df_dmr_probe_olap_sub can also be used for the same
+B_vals_ct_m_n_dmr_num<-B_vals_ct_m_n_dmr[,17:39]
+
+
+corr_mtx_ct_m_n_DMR<-cor(B_vals_ct_m_n_dmr_num ,method = "pearson")
+corr_mtx_ct_m_n_DMR
+library(viridis)
+heatmap_DMR_ct_m_n<-heatmaply(corr_mtx_ct_m_n_DMR, 
+          colors = viridis(100),
+          main = "Correlation Heatmap CT-N and M-N overlap (400 DMR)")
+heatmap_DMR_ct_m_n
+```
+
+Plasma-Normal and Core Normal Overlaps and mapping the beta values for that.
+```{r}
+
+#Probe grange object
+probes_gr
+
+#overlapping grnage object
+ct_c_n_overlap
+ct_c_n_overlap_df<-as.data.frame(ct_c_n_overlap)
+
+#overlap probes to DMR
+# Find overlaps between the probes grange object and DMR G range object (Ct-N and M-N) the 400 overlaping DMRS from the venn
+ct_c_n_dmr_olap <- findOverlaps(probes_gr, ct_c_n_overlap)
+
+# Extract the overlaps as a dataframe
+ct_c_n_dmr_olap_df <- data.frame(
+  probe_index = queryHits(ct_c_n_dmr_olap),
+  dmr_index = subjectHits(ct_c_n_dmr_olap)
+)
+
+# Join the overlaps with the original dataframes to get the complete information
+mapped_probes_ct_c_n <- probe_chr[ct_c_n_dmr_olap_df$probe_index, ]
+mapped_dmrs_ct_c_n <- ct_m_n_overlap_df[ct_c_n_dmr_olap_df$dmr_index, ]
+
+# Combine the mapped probes and DMRs into a single dataframe
+result_mapping_ct_c_n_dmr_df <- cbind(mapped_probes_ct_c_n, mapped_dmrs_ct_c_n)
+
+#The next step is to extract the bvals corresponding to the probe-DMR combination. We already have a datframe bvals that was generated that has bvas for all samples corresponding to each probe. 
+
+#First step is to identify the common rows in bVals dataframe and results_mapping dataframe as both have probe names as the rowheaders
+common_rows_ct_c_n <- intersect(rownames(result_mapping_ct_c_n_dmr_df), rownames(bVals))
+
+
+#The next step is to subset the dataframe for the common rows identified. This is to be done for both the data frame having DMR-Probe mapping (result_mapping) and the dataframe that has all teh probes and corresponding bvals (bVals)
+dfallprobe_ct_c_n_subset <- bVals[common_rows_ct_c_n, ]
+df_dmr_ct_c_n_probe_olap_sub<-result_mapping_ct_c_n_dmr_df[common_rows_ct_c_n, ]
+
+#The next step is to cbind both the subset dataframes to have them in a single data frame. Now we have bvals for all samples corresponding to common probes
+B_vals_ct_c_n_dmr<-cbind(df_dmr_ct_c_n_probe_olap_sub,dfallprobe_ct_c_n_subset)
+
+
+#subset the above data frame to get the numerical values for reatinga. correlation plot. df_dmr_probe_olap_sub can also be used for the same
+B_vals_ct_c_n_dmr_num<-B_vals_ct_c_n_dmr[,17:39]
+
+
+corr_mtx_ct_c_n_DMR<-cor(B_vals_ct_c_n_dmr_num ,method = "pearson")
+corr_mtx_ct_c_n_DMR
+library(viridis)
+heatmap_DMR_ct_c_n<-heatmaply(corr_mtx_ct_c_n_DMR, 
+          colors = viridis(100),
+          main = "Correlation Heatmap Ct-N and C-N overlap (527 DMR)")
+heatmap_DMR_ct_c_n
+```
+
+
+
+
+
+
+
+Plasma-Margin Direct comparison
+```{r}
+#Probe grange object
+probes_gr
+
+#overlapping grnage object
+results.ranges_ct_margin
+ct_m_dmr_df<-as.data.frame(results.ranges_ct_margin)
+
+#overlap probes to DMR
+# Find overlaps between the probes grange object and DMR G range object (Ct-N and M-N) the 400 overlaping DMRS from the venn
+ct_m_dmr_p_d_olap<- findOverlaps(probes_gr, results.ranges_ct_margin)
+
+# Extract the overlaps as a dataframe
+ct_m_p_d_olap_df <- data.frame(
+  probe_index = queryHits(ct_m_dmr_p_d_olap),
+  dmr_index = subjectHits(ct_m_dmr_p_d_olap)
+)
+
+# Join the overlaps with the original dataframes to get the complete information
+mapped_probes_ct_m <- probe_chr[ct_m_p_d_olap_df$probe_index, ]
+mapped_dmrs_ct_m <- ct_m_dmr_df[ct_m_p_d_olap_df$dmr_index, ]
+
+# Combine the mapped probes and DMRs into a single dataframe
+result_mapping_ct_m_df <- cbind(mapped_probes_ct_m, mapped_dmrs_ct_m)
+
+#The next step is to extract the bvals corresponding to the probe-DMR combination. We already have a datframe bvals that was generated that has bvas for all samples corresponding to each probe. 
+
+#First step is to identify the common rows in bVals dataframe and results_mapping dataframe as both have probe names as the rowheaders
+common_rows_ct_m <- intersect(rownames(result_mapping_ct_m_df), rownames(bVals))
+
+
+#The next step is to subset the dataframe for the common rows identified. This is to be done for both the data frame having DMR-Probe mapping (result_mapping) and the dataframe that has all teh probes and corresponding bvals (bVals)
+dfallprobe_ct_m_subset <- bVals[common_rows_ct_m, ]
+df_dmr_ct_m_probe_olap_sub<-result_mapping_ct_m_df[common_rows_ct_m, ]
+
+#The next step is to cbind both the subset dataframes to have them in a single data frame. Now we have bvals for all samples corresponding to common probes
+B_vals_ct_m_dmr<-cbind(df_dmr_ct_m_probe_olap_sub,dfallprobe_ct_m_subset)
+
+
+#subset the above data frame to get the numerical values for reatinga. correlation plot. df_dmr_probe_olap_sub can also be used for the same
+B_vals_ct_m_dmr_num<-B_vals_ct_m_dmr[,17:39]
+
+
+corr_mtx_ct_m_DMR<-cor(B_vals_ct_m_dmr_num ,method = "pearson")
+corr_mtx_ct_m_DMR
+library(viridis)
+heatmap_DMR_ct_m<-heatmaply(corr_mtx_ct_m_DMR, 
+          colors = viridis(100),
+          main = "Correlation Heatmap Ct-M")
+heatmap_DMR_ct_m
+```
+
+Plasma-Core Direct Comparison
+
+```{r}
+#Probe grange object
+probes_gr
+
+#overlapping grnage object
+results.ranges_plasmaDNA_core
+ct_c_dmr_df<-as.data.frame(results.ranges_plasmaDNA_core)
+
+#overlap probes to DMR
+# Find overlaps between the probes grange object and DMR G range object (Ct-N and M-N) the 400 overlaping DMRS from the venn
+ct_c_dmr_p_d_olap<- findOverlaps(probes_gr, results.ranges_plasmaDNA_core)
+
+# Extract the overlaps as a dataframe
+ct_c_p_d_olap_df <- data.frame(
+  probe_index = queryHits(ct_c_dmr_p_d_olap),
+  dmr_index = subjectHits(ct_c_dmr_p_d_olap)
+)
+
+# Join the overlaps with the original dataframes to get the complete information
+mapped_probes_ct_c <- probe_chr[ct_c_p_d_olap_df$probe_index, ]
+mapped_dmrs_ct_c <- ct_c_dmr_df[ct_c_p_d_olap_df$dmr_index, ]
+
+# Combine the mapped probes and DMRs into a single dataframe
+result_mapping_ct_c_df <- cbind(mapped_probes_ct_c, mapped_dmrs_ct_c)
+
+#The next step is to extract the bvals corresponding to the probe-DMR combination. We already have a datframe bvals that was generated that has bvas for all samples corresponding to each probe. 
+
+#First step is to identify the common rows in bVals dataframe and results_mapping dataframe as both have probe names as the rowheaders
+common_rows_ct_c <- intersect(rownames(result_mapping_ct_c_df), rownames(bVals))
+
+
+#The next step is to subset the dataframe for the common rows identified. This is to be done for both the data frame having DMR-Probe mapping (result_mapping) and the dataframe that has all teh probes and corresponding bvals (bVals)
+dfallprobe_ct_c_subset <- bVals[common_rows_ct_c, ]
+df_dmr_ct_c_probe_olap_sub<-result_mapping_ct_c_df[common_rows_ct_c, ]
+
+#The next step is to cbind both the subset dataframes to have them in a single data frame. Now we have bvals for all samples corresponding to common probes
+B_vals_ct_c_dmr<-cbind(df_dmr_ct_c_probe_olap_sub,dfallprobe_ct_c_subset)
+
+
+#subset the above data frame to get the numerical values for reatinga. correlation plot. df_dmr_probe_olap_sub can also be used for the same
+B_vals_ct_c_dmr_num<-B_vals_ct_c_dmr[,17:39]
+
+
+corr_mtx_ct_c_DMR<-cor(B_vals_ct_c_dmr_num ,method = "pearson")
+corr_mtx_ct_c_DMR
+library(viridis)
+heatmap_DMR_ct_c<-heatmaply(corr_mtx_ct_c_DMR, 
+          colors = viridis(100),
+          main = "Correlation Heatmap Ct-C ")
+heatmap_DMR_ct_c
+```
+
+```{r}
+install.packages("openxlsx")
+library(openxlsx)
+
+# Create sample dataframes
+corr_279DMR <- as.data.frame(corr_mtx_DMR)
+corr_ct_m_n <- as.data.frame(corr_mtx_ct_m_n_DMR)
+corr_ct_c_n<-as.data.frame(corr_mtx_ct_c_n_DMR)
+corr_ct_m<-as.data.frame(corr_mtx_ct_m_DMR)
+corr_ct_c<-as.data.frame(corr_mtx_ct_c_DMR)
+
+# Create a new workbook
+wb <- createWorkbook()
+
+# Add worksheets
+addWorksheet(wb, "279 DMR")
+addWorksheet(wb, "Ct_M_N")
+addWorksheet(wb, "Ct_C_N")
+addWorksheet(wb, "Ct_M")
+addWorksheet(wb, "Ct_C")
+
+
+# Write data to worksheets
+writeData(wb, "279 DMR", corr_279DMR)
+writeData(wb, "Ct_M_N", corr_ct_m_n)
+writeData(wb, "Ct_C_N", corr_ct_c_n)
+writeData(wb, "Ct_M", corr_ct_m)
+writeData(wb, "Ct_C", corr_ct_c)
+
+# Save the workbook
+saveWorkbook(wb, "Correlation Plot Values Probe-DMR Mapping.xlsx", overwrite = TRUE)
+
+
+#writing the plots as images
+# Install necessary packages
+install.packages("heatmaply")
+install.packages("htmlwidgets")
+install.packages("webshot")
+webshot::install_phantomjs() # Run this once to install PhantomJS
+
+# Load the packages
+library(heatmaply)
+library(htmlwidgets)
+library(webshot)
+
+# Generate the heatmap and save it as an HTML file
+heatmap_DMR <- heatmaply(corr_mtx_DMR, 
+                     colors = viridis::viridis(100),
+                     main = "Correlation Heatmap 279 DMR")
+
+# Save the HTML widget
+saveWidget(heatmap_DMR, "heatmap_279_DMR.html")
+
+# Convert HTML to JPEG
+webshot("heatmap_279_DMR.html", file = "Correlation Plot 279 DMR (Probe-DMR mapped Bvals).jpg", vwidth = 800, vheight = 600)
+
+
+# Generate the heatmap and save it as an HTML file
+heatmap_DMR <- heatmaply(corr_mtx_DMR, 
+                     colors = viridis::viridis(100),
+                     main = "Correlation Heatmap 279 DMR")
+
+# Save the HTML widget
+saveWidget(heatmap_DMR, "heatmap_279_DMR.html")
+
+# Convert HTML to JPEG
+webshot("heatmap_279_DMR.html", file = "Correlation Plot 279 DMR (Probe-DMR mapped Bvals).jpg", vwidth = 800, vheight = 600)
+
+```
